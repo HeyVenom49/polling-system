@@ -1,6 +1,6 @@
-import { z } from "zod";
 // Required for Node.js. Bun loads .env automatically.
 import "dotenv/config";
+import { z } from "zod";
 
 const ALLOWED_NODE_ENVS = ["development", "test", "production"] as const;
 
@@ -17,6 +17,9 @@ const envSchema = z.object({
         message: "DATABASE_URL must be a valid PostgreSQL connection string.",
       },
     ),
+  DB_POOL_MAX: z.coerce.number().int().min(1).default(12),
+  DB_POOL_IDLE_TIMEOUT_MS: z.coerce.number().int().min(0).default(60_000),
+  DB_POOL_CONNECTION_TIMEOUT_MS: z.coerce.number().int().min(0).default(30_000),
   REDIS_URL: z
     .string()
     .trim()
