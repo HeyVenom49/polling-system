@@ -39,6 +39,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_EXPIRES_IN: z.string().min(1, {
     message: 'REFRESH_TOKEN_EXPIRES_IN is required (e.g. "7d", "30d").',
   }),
+  BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
   CORS_ORIGIN: z.url().optional(),
 });
 

@@ -22,4 +22,5 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export type User = typeof users.$inferInsert;
 export type NewUser = typeof users.$inferInsert;
