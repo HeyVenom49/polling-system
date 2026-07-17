@@ -12,7 +12,6 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "types": ["bun"],
     "noEmit": true,
 
     // Best practices
@@ -27,5 +26,6 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["src/**/*", "drizzle.config.ts"]
+  "include": ["src/**/*", "drizzle.config.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

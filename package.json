@@ -2,6 +2,7 @@
   "name": "polling-system",
   "private": true,
   "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "prepare": "husky"
   },

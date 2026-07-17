@@ -15,6 +15,13 @@
       "when": 1784270490922,
       "tag": "0001_petite_excalibur",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784274498938,
+      "tag": "0002_hard_solo",
+      "breakpoints": true
     }
   ]
 }

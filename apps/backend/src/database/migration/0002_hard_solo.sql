@@ -1,0 +1,1 @@
+CREATE INDEX "idx_users_active_deleted" ON "users" USING btree ("is_active","deleted_at");
