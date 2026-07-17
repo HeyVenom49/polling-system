@@ -1,26 +1,88 @@
 import type { Request, Response } from "express";
+import { UnauthorizedError } from "../../errors/unauthorized.error";
+import { sendSuccess } from "../../utils/response";
+import {
+  clearRefreshTokenCookie,
+  readRefreshTokenCookie,
+  setRefreshTokenCookie,
+} from "./auth.cookie";
+import type { LoginInput, RegisterInput } from "./auth.schema";
 import { authService, type AuthService } from "./auth.service";
 
 class AuthController {
   constructor(private readonly service: AuthService = authService) {}
 
-  async register(req: Request, res: Response) {
+  register = async (
+    req: Request<Record<string, never>, unknown, RegisterInput>,
+    res: Response,
+  ): Promise<Response> => {
     const data = await this.service.register(req.body);
-    return res.status(201).json({
-      success: true,
+    return sendSuccess(res, {
+      statusCode: 201,
       message: "User registered successfully",
       data,
     });
-  }
+  };
 
-  async login(req: Request, res: Response) {
-    const data = await this.service.login(req.body);
-    return res.status(200).json({
-      success: true,
+  login = async (
+    req: Request<Record<string, never>, unknown, LoginInput>,
+    res: Response,
+  ): Promise<Response> => {
+    const { user, tokens } = await this.service.login(req.body);
+    setRefreshTokenCookie(res, tokens.refreshToken);
+
+    return sendSuccess(res, {
       message: "Login successful",
-      data,
+      data: {
+        user,
+        accessToken: tokens.accessToken,
+      },
     });
-  }
+  };
+
+  refresh = async (req: Request, res: Response): Promise<Response> => {
+    const refreshToken = readRefreshTokenCookie(req);
+
+    if (!refreshToken) {
+      throw new UnauthorizedError("Refresh token is required");
+    }
+
+    const { user, tokens } = await this.service.refresh(refreshToken);
+    setRefreshTokenCookie(res, tokens.refreshToken);
+
+    return sendSuccess(res, {
+      message: "Token refreshed successfully",
+      data: {
+        user,
+        accessToken: tokens.accessToken,
+      },
+    });
+  };
+
+  logout = async (req: Request, res: Response): Promise<Response> => {
+    const refreshToken = readRefreshTokenCookie(req);
+
+    try {
+      await this.service.logout(refreshToken);
+    } finally {
+      clearRefreshTokenCookie(res);
+    }
+
+    return sendSuccess(res, {
+      message: "Logout successful",
+    });
+  };
+
+  me = async (req: Request, res: Response): Promise<Response> => {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+
+    return sendSuccess(res, {
+      message: "Current user fetched successfully",
+      data: req.user,
+    });
+  };
 }
 
 export const authController = new AuthController();

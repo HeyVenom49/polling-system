@@ -17,12 +17,8 @@ export async function connectRedis() {
     await client.ping();
     return;
   }
-  try {
-    await client.connect();
-    await client.ping();
-  } catch (error) {
-    throw error;
-  }
+  await client.connect();
+  await client.ping();
 }
 
 export async function disconnectRedis() {

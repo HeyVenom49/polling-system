@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import type { ZodType } from "zod";
 import { ValidationError } from "../errors/validation.error";
 
-export function validate(schema: ZodType): RequestHandler {
+export const validateBody = (schema: ZodType): RequestHandler => {
   return (req, _res, next): void => {
     const result = schema.safeParse(req.body);
 
@@ -22,4 +22,4 @@ export function validate(schema: ZodType): RequestHandler {
     req.body = result.data;
     next();
   };
-}
+};

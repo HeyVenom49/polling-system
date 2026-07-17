@@ -15,12 +15,11 @@ export const users = pgTable("users", {
   email: varchar("email").unique().notNull(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   role: roleEnum("role").notNull().default("user"),
-  isActive: boolean("is_active").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
-  deletedAt: timestamp("deleted_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export type User = typeof users.$inferInsert;
 export type NewUser = typeof users.$inferInsert;

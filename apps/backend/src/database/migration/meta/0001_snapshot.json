@@ -1,6 +1,6 @@
 {
-  "id": "a00aeb5e-88b8-4d4c-9c7b-12a77bdda42a",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "513cb6aa-cf13-4ade-9699-84a5ff16b588",
+  "prevId": "a00aeb5e-88b8-4d4c-9c7b-12a77bdda42a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -29,7 +29,7 @@
         },
         "password_hash": {
           "name": "password_hash",
-          "type": "varchar(25)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
@@ -59,8 +59,7 @@
           "name": "deleted_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",

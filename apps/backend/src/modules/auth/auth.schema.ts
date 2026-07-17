@@ -1,29 +1,40 @@
 import { z } from "zod";
 
-export const usernameSchema = z
+const usernameSchema = z
   .string()
   .trim()
   .toLowerCase()
   .min(3, "Username must be at least 3 characters.")
-  .max(20, "Username can only 20 characters.")
-  .regex(/^[A-Za-z0-9_-]+$/, "Invalid username");
+  .max(50, "Username must be at most 50 characters.")
+  .regex(
+    /^[a-z0-9_-]+$/,
+    "Username may contain only letters, numbers, underscores, and hyphens.",
+  );
 
-export const passwordSchema = z.string().min(8).max(128);
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters.")
+  .max(128, "Password must be at most 128 characters.")
+  .refine((password) => new TextEncoder().encode(password).byteLength <= 72, {
+    message: "Password must be at most 72 UTF-8 bytes.",
+  });
 
-export const emailSchema = z.string().trim().toLowerCase().email();
+const emailSchema = z.string().trim().toLowerCase().email();
 
-const registerSchema = z.object({
-  username: usernameSchema,
-  email: emailSchema,
-  password: passwordSchema,
-});
+export const registerSchema = z
+  .object({
+    username: usernameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+  })
+  .strict();
 
-const loginSchema = z.object({
-  identifier: z.union([emailSchema, usernameSchema]),
-  password: passwordSchema,
-});
+export const loginSchema = z
+  .object({
+    identifier: z.union([emailSchema, usernameSchema]),
+    password: passwordSchema,
+  })
+  .strict();
 
-export const RegisterSchema = registerSchema.strict();
-export const LoginSchema = loginSchema.strict();
-export type RegisterInput = z.infer<typeof RegisterSchema>;
-export type LoginInput = z.infer<typeof LoginSchema>;
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

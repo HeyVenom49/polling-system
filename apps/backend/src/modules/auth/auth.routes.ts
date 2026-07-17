@@ -1,20 +1,20 @@
 import { Router } from "express";
-import { validate as validateRequest } from "../../middleware/validate.middleware";
-import { LoginSchema, RegisterSchema } from "./auth.schema";
+import { authenticate, validateBody } from "../../middleware/index.middleware";
+import { loginSchema, registerSchema } from "./auth.schema";
 import { authController } from "./auth.controller";
 
-const router = Router();
+const authRouter = Router();
 
-router.post(
+authRouter.post(
   "/register",
-  validateRequest(RegisterSchema),
-  authController.register.bind(authController),
+  validateBody(registerSchema),
+  authController.register,
 );
 
-router.post(
-  "/login",
-  validateRequest(LoginSchema),
-  authController.login.bind(authController),
-);
+authRouter.post("/login", validateBody(loginSchema), authController.login);
 
-export default router;
+authRouter.post("/refresh", authController.refresh);
+authRouter.post("/logout", authController.logout);
+authRouter.get("/me", authenticate, authController.me);
+
+export default authRouter;

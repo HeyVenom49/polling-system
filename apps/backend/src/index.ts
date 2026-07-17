@@ -47,13 +47,7 @@ const listen = () =>
 const startServer = async () => {
   try {
     await connectDatabase();
-
-    try {
-      await connectRedis();
-    } catch (error) {
-      console.error("Redis connection failed, continuing without Redis:", error);
-    }
-
+    await connectRedis();
     await listen();
     console.log(`Server is running on port ${env.PORT}`);
 
