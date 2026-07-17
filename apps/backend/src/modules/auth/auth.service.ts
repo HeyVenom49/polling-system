@@ -9,7 +9,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
   type RefreshTokenPayload,
-} from "../../utils/jwt";
+} from "../../utils/jwt.ts";
 import { AuthRepository, authRepository } from "./auth.repository";
 import {
   AuthSessionRepository,
