@@ -12,11 +12,12 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:clean-meta": "find src/database/migration -name '._*' -delete",
+    "db:generate": "bun run db:clean-meta && drizzle-kit generate",
+    "db:migrate": "bun run db:clean-meta && drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:check": "drizzle-kit check"
+    "db:check": "bun run db:clean-meta && drizzle-kit check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
