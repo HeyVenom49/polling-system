@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { CreatePollInput } from "./poll.schema";
 import type { PublicPoll, UpdatePollData } from "./poll.types";
-import { pollRepository, type PollRepository } from "./poll.repository";
+import type { PollRepository } from "./poll.repository";
 import { ConflictError } from "../../errors/conflict.error";
 import { NotFoundError } from "../../errors/not-found.error";
 
@@ -15,7 +15,7 @@ function isUniqueViolation(error: unknown) {
 }
 
 export class PollService {
-  constructor(private readonly repository: PollRepository = pollRepository) {}
+  constructor(private readonly repository: PollRepository) {}
 
   async createPoll(
     creatorId: string,
@@ -95,5 +95,3 @@ export class PollService {
     }
   }
 }
-
-export const pollService = new PollService();

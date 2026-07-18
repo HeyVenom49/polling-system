@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 
 import type { CreatePollInput, UpdatePollInput } from "./poll.schema";
-import { pollService, type PollService } from "./poll.services";
+import type { PollService } from "./poll.services";
 import { UnauthorizedError } from "../../errors/unauthorized.error";
 import { sendSuccess } from "../../utils/response";
 
 export class PollController {
-  constructor(private readonly service: PollService = pollService) {}
+  constructor(private readonly service: PollService) {}
 
   create = async (
     req: Request<Record<string, never>, unknown, CreatePollInput>,
@@ -37,8 +37,11 @@ export class PollController {
     });
   };
 
-  getByShareId = async (req: Request<{ shareId: string }>, res: Response) => {
-    const data = await this.service.getById(req.params.shareId);
+  getByShareId = async (
+    req: Request<{ shareId: string }>,
+    res: Response,
+  ): Promise<Response> => {
+    const data = await this.service.getByShareId(req.params.shareId);
 
     return sendSuccess(res, {
       message: "Poll fetched successfully",
@@ -94,5 +97,3 @@ export class PollController {
     });
   };
 }
-
-export const pollController = new PollController();

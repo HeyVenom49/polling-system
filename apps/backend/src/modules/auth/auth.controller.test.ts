@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 import type { Request, Response } from "express";
+import type { AuthService } from "./auth.service";
 import type { PublicUser } from "./auth.types";
 
 Object.assign(process.env, {
@@ -12,7 +13,7 @@ Object.assign(process.env, {
   REFRESH_TOKEN_EXPIRES_IN: "7d",
 });
 
-const { authController } = await import("./auth.controller");
+const { AuthController } = await import("./auth.controller");
 
 const user: PublicUser = {
   id: "8e464d7e-2d95-4c7f-a9ac-3d6f33053085",
@@ -34,10 +35,12 @@ function createResponse() {
 }
 
 describe("AuthController.me", () => {
+  const controller = new AuthController({} as AuthService);
+
   test("returns the user resolved by authentication middleware", async () => {
     const { json, response } = createResponse();
 
-    await authController.me({ user } as Request, response);
+    await controller.me({ user } as Request, response);
 
     expect(json).toHaveBeenCalledWith({
       success: true,
@@ -49,8 +52,8 @@ describe("AuthController.me", () => {
   test("rejects a request without an authenticated user", async () => {
     const { response } = createResponse();
 
-    await expect(
-      authController.me({} as Request, response),
-    ).rejects.toMatchObject({ statusCode: 401 });
+    await expect(controller.me({} as Request, response)).rejects.toMatchObject({
+      statusCode: 401,
+    });
   });
 });

@@ -1,7 +1,7 @@
 import { env } from "./config/env";
-import server from "./server";
-import { connectDatabase, disconnectDatabase } from "./database/postgres";
-import { connectRedis, disconnectRedis } from "./database/redis";
+import { createContainer } from "./container";
+
+const { server, connect, disconnect } = createContainer();
 
 let isShuttingDown = false;
 
@@ -16,8 +16,7 @@ const shutdown = async (signal: string, exitCode = 0) => {
   });
 
   try {
-    await disconnectDatabase();
-    await disconnectRedis();
+    await disconnect();
   } catch (error) {
     console.error("Error during shutdown cleanup:", error);
     process.exit(1);
@@ -46,8 +45,7 @@ const listen = () =>
 
 const startServer = async () => {
   try {
-    await connectDatabase();
-    await connectRedis();
+    await connect();
     await listen();
     console.log(`Server is running on port ${env.PORT}`);
 
@@ -57,8 +55,7 @@ const startServer = async () => {
     console.error("Failed to start server:", error);
 
     try {
-      await disconnectDatabase();
-      await disconnectRedis();
+      await disconnect();
     } catch (cleanupError) {
       console.error("Error during startup cleanup:", cleanupError);
     }

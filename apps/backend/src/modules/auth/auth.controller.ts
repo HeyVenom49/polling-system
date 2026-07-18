@@ -7,10 +7,10 @@ import {
   setRefreshTokenCookie,
 } from "./auth.cookie";
 import type { LoginInput, RegisterInput } from "./auth.schema";
-import { authService, type AuthService } from "./auth.service";
+import type { AuthService } from "./auth.service";
 
-class AuthController {
-  constructor(private readonly service: AuthService = authService) {}
+export class AuthController {
+  constructor(private readonly service: AuthService) {}
 
   register = async (
     req: Request<Record<string, never>, unknown, RegisterInput>,
@@ -84,5 +84,3 @@ class AuthController {
     });
   };
 }
-
-export const authController = new AuthController();

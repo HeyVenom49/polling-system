@@ -1,31 +1,40 @@
-import { Router } from "express";
-import { authenticate } from "../../middleware/auth.middleware";
+import { Router, type RequestHandler } from "express";
 import { validateBody } from "../../middleware/validate.middleware";
 import { createPollSchema, updatePollSchema } from "./poll.schema";
-import { pollController } from "./poll.controller";
+import type { PollController } from "./poll.controller";
 
-const pollRouter = Router();
+export type PollRouterDeps = {
+  controller: PollController;
+  authenticate: RequestHandler;
+};
 
-pollRouter.post(
-  "/",
+export function createPollRouter({
+  controller,
   authenticate,
-  validateBody(createPollSchema),
-  pollController.create,
-);
+}: PollRouterDeps): Router {
+  const pollRouter = Router();
 
-pollRouter.get("/", authenticate, pollController.listMine);
+  pollRouter.post(
+    "/",
+    authenticate,
+    validateBody(createPollSchema),
+    controller.create,
+  );
 
-pollRouter.get("/share/:shareId", pollController.getByShareId);
+  pollRouter.get("/", authenticate, controller.listMine);
 
-pollRouter.get("/:id", pollController.getById);
+  pollRouter.get("/share/:shareId", controller.getByShareId);
 
-pollRouter.patch(
-  "/:id",
-  authenticate,
-  validateBody(updatePollSchema),
-  pollController.update,
-);
+  pollRouter.get("/:id", controller.getById);
 
-pollRouter.delete("/:id", authenticate, pollController.delete);
+  pollRouter.patch(
+    "/:id",
+    authenticate,
+    validateBody(updatePollSchema),
+    controller.update,
+  );
 
-export default pollRouter;
+  pollRouter.delete("/:id", authenticate, controller.delete);
+
+  return pollRouter;
+}

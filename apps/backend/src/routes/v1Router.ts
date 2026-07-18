@@ -1,10 +1,18 @@
 import { Router } from "express";
-import authRouter from "../modules/auth/auth.routes";
-import pollRouter from "../modules/polls/poll.routes";
 
-const router = Router();
+export type V1RouterDeps = {
+  authRouter: Router;
+  pollRouter: Router;
+};
 
-router.use("/auth", authRouter);
-router.use("/polls", pollRouter);
+export function createV1Router({
+  authRouter,
+  pollRouter,
+}: V1RouterDeps): Router {
+  const router = Router();
 
-export default router;
+  router.use("/auth", authRouter);
+  router.use("/polls", pollRouter);
+
+  return router;
+}

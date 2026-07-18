@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "../../database/postgres";
+import type { Database } from "../../infrastructure/postgres/postgres-client";
 import { polls } from "../../database/schema";
 import type { CreatePollData, PublicPoll, UpdatePollData } from "./poll.types";
 
@@ -18,8 +18,10 @@ const publicPollSelect = {
 } as const;
 
 export class PollRepository {
+  constructor(private readonly db: Database) {}
+
   async createPoll(data: CreatePollData): Promise<PublicPoll> {
-    const [poll] = await db
+    const [poll] = await this.db
       .insert(polls)
       .values(data)
       .returning(publicPollSelect);
@@ -32,7 +34,7 @@ export class PollRepository {
   }
 
   async findById(id: string): Promise<PublicPoll | null> {
-    const [poll] = await db
+    const [poll] = await this.db
       .select(publicPollSelect)
       .from(polls)
       .where(eq(polls.id, id))
@@ -42,7 +44,7 @@ export class PollRepository {
   }
 
   async findByShareId(shareId: string): Promise<PublicPoll | null> {
-    const [poll] = await db
+    const [poll] = await this.db
       .select(publicPollSelect)
       .from(polls)
       .where(eq(polls.shareId, shareId))
@@ -56,7 +58,7 @@ export class PollRepository {
     limit = 20,
     offset = 0,
   ): Promise<PublicPoll[]> {
-    return db
+    return this.db
       .select(publicPollSelect)
       .from(polls)
       .where(eq(polls.creatorId, creatorId))
@@ -70,7 +72,7 @@ export class PollRepository {
     creatorId: string,
     data: UpdatePollData,
   ): Promise<PublicPoll | null> {
-    const [poll] = await db
+    const [poll] = await this.db
       .update(polls)
       .set({ ...data, updatedAt: new Date() })
       .where(and(eq(polls.id, id), eq(polls.creatorId, creatorId)))
@@ -80,7 +82,7 @@ export class PollRepository {
   }
 
   async deletePoll(id: string, creatorId: string): Promise<boolean> {
-    const deleted = await db
+    const deleted = await this.db
       .delete(polls)
       .where(and(eq(polls.id, id), eq(polls.creatorId, creatorId)))
       .returning({ id: polls.id });
@@ -88,5 +90,3 @@ export class PollRepository {
     return deleted.length > 0;
   }
 }
-
-export const pollRepository = new PollRepository();

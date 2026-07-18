@@ -10,11 +10,8 @@ import {
   verifyRefreshToken,
   type RefreshTokenPayload,
 } from "../../utils/jwt.ts";
-import { AuthRepository, authRepository } from "./auth.repository";
-import {
-  AuthSessionRepository,
-  authSessionRepository,
-} from "./auth-session.repository";
+import type { AuthRepository } from "./auth.repository";
+import type { AuthSessionRepository } from "./auth-session.repository";
 import type { LoginInput, RegisterInput } from "./auth.schema";
 import type { AuthResult, PublicUser, TokenPair } from "./auth.types";
 
@@ -32,8 +29,8 @@ function isUniqueViolation(error: unknown): boolean {
 
 export class AuthService {
   constructor(
-    private readonly repository: AuthRepository = authRepository,
-    private readonly sessionRepository: AuthSessionRepository = authSessionRepository,
+    private readonly repository: AuthRepository,
+    private readonly sessionRepository: AuthSessionRepository,
   ) {}
 
   async register(data: RegisterInput): Promise<PublicUser> {
@@ -146,5 +143,3 @@ export class AuthService {
     }
   }
 }
-
-export const authService = new AuthService();
