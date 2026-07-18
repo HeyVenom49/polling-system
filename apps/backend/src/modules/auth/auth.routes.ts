@@ -17,14 +17,18 @@ export function createAuthRouter({
   authRouter.post(
     "/register",
     validateBody(registerSchema),
-    controller.register,
+    controller.register.bind(controller),
   );
 
-  authRouter.post("/login", validateBody(loginSchema), controller.login);
+  authRouter.post(
+    "/login",
+    validateBody(loginSchema),
+    controller.login.bind(controller),
+  );
 
-  authRouter.post("/refresh", controller.refresh);
-  authRouter.post("/logout", controller.logout);
-  authRouter.get("/me", authenticate, controller.me);
+  authRouter.post("/refresh", controller.refresh.bind(controller));
+  authRouter.post("/logout", controller.logout.bind(controller));
+  authRouter.get("/me", authenticate, controller.me.bind(controller));
 
   return authRouter;
 }

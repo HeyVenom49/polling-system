@@ -8,10 +8,10 @@ import { sendSuccess } from "../../utils/response";
 export class PollController {
   constructor(private readonly service: PollService) {}
 
-  create = async (
+  async create(
     req: Request<Record<string, never>, unknown, CreatePollInput>,
     res: Response,
-  ): Promise<Response> => {
+  ): Promise<Response> {
     if (!req.user) {
       throw new UnauthorizedError();
     }
@@ -23,33 +23,33 @@ export class PollController {
       message: "Poll created successfully",
       data,
     });
-  };
+  }
 
-  getById = async (
+  async getById(
     req: Request<{ id: string }>,
     res: Response,
-  ): Promise<Response> => {
+  ): Promise<Response> {
     const data = await this.service.getById(req.params.id);
 
     return sendSuccess(res, {
       message: "Poll fetched successfully",
       data,
     });
-  };
+  }
 
-  getByShareId = async (
+  async getByShareId(
     req: Request<{ shareId: string }>,
     res: Response,
-  ): Promise<Response> => {
+  ): Promise<Response> {
     const data = await this.service.getByShareId(req.params.shareId);
 
     return sendSuccess(res, {
       message: "Poll fetched successfully",
       data,
     });
-  };
+  }
 
-  listMine = async (req: Request, res: Response): Promise<Response> => {
+  async listMine(req: Request, res: Response): Promise<Response> {
     if (!req.user) {
       throw new UnauthorizedError();
     }
@@ -60,12 +60,12 @@ export class PollController {
       message: "Poll fetched successfully",
       data,
     });
-  };
+  }
 
-  update = async (
+  async update(
     req: Request<{ id: string }, unknown, UpdatePollInput>,
     res: Response,
-  ): Promise<Response> => {
+  ): Promise<Response> {
     if (!req.user) {
       throw new UnauthorizedError();
     }
@@ -80,12 +80,12 @@ export class PollController {
       message: "Poll updated successfully",
       data,
     });
-  };
+  }
 
-  delete = async (
+  async delete(
     req: Request<{ id: string }>,
     res: Response,
-  ): Promise<Response> => {
+  ): Promise<Response> {
     if (!req.user) {
       throw new UnauthorizedError();
     }
@@ -95,5 +95,5 @@ export class PollController {
     return sendSuccess(res, {
       message: "Poll deleted successfully",
     });
-  };
+  }
 }

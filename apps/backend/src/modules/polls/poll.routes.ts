@@ -18,23 +18,30 @@ export function createPollRouter({
     "/",
     authenticate,
     validateBody(createPollSchema),
-    controller.create,
+    controller.create.bind(controller),
   );
 
-  pollRouter.get("/", authenticate, controller.listMine);
+  pollRouter.get("/", authenticate, controller.listMine.bind(controller));
 
-  pollRouter.get("/share/:shareId", controller.getByShareId);
+  pollRouter.get(
+    "/share/:shareId",
+    controller.getByShareId.bind(controller),
+  );
 
-  pollRouter.get("/:id", controller.getById);
+  pollRouter.get("/:id", controller.getById.bind(controller));
 
   pollRouter.patch(
     "/:id",
     authenticate,
     validateBody(updatePollSchema),
-    controller.update,
+    controller.update.bind(controller),
   );
 
-  pollRouter.delete("/:id", authenticate, controller.delete);
+  pollRouter.delete(
+    "/:id",
+    authenticate,
+    controller.delete.bind(controller),
+  );
 
   return pollRouter;
 }

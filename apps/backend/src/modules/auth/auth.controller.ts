@@ -1,33 +1,34 @@
 import type { Request, Response } from "express";
-import { UnauthorizedError } from "../../errors/unauthorized.error";
-import { sendSuccess } from "../../utils/response";
+
+import type { LoginInput, RegisterInput } from "./auth.schema";
+import type { AuthService } from "./auth.service";
 import {
   clearRefreshTokenCookie,
   readRefreshTokenCookie,
   setRefreshTokenCookie,
 } from "./auth.cookie";
-import type { LoginInput, RegisterInput } from "./auth.schema";
-import type { AuthService } from "./auth.service";
+import { UnauthorizedError } from "../../errors/unauthorized.error";
+import { sendSuccess } from "../../utils/response";
 
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
-  register = async (
+  async register(
     req: Request<Record<string, never>, unknown, RegisterInput>,
     res: Response,
-  ): Promise<Response> => {
+  ): Promise<Response> {
     const data = await this.service.register(req.body);
     return sendSuccess(res, {
       statusCode: 201,
       message: "User registered successfully",
       data,
     });
-  };
+  }
 
-  login = async (
+  async login(
     req: Request<Record<string, never>, unknown, LoginInput>,
     res: Response,
-  ): Promise<Response> => {
+  ): Promise<Response> {
     const { user, tokens } = await this.service.login(req.body);
     setRefreshTokenCookie(res, tokens.refreshToken);
 
@@ -38,9 +39,9 @@ export class AuthController {
         accessToken: tokens.accessToken,
       },
     });
-  };
+  }
 
-  refresh = async (req: Request, res: Response): Promise<Response> => {
+  async refresh(req: Request, res: Response): Promise<Response> {
     const refreshToken = readRefreshTokenCookie(req);
 
     if (!refreshToken) {
@@ -57,9 +58,9 @@ export class AuthController {
         accessToken: tokens.accessToken,
       },
     });
-  };
+  }
 
-  logout = async (req: Request, res: Response): Promise<Response> => {
+  async logout(req: Request, res: Response): Promise<Response> {
     const refreshToken = readRefreshTokenCookie(req);
 
     try {
@@ -71,9 +72,9 @@ export class AuthController {
     return sendSuccess(res, {
       message: "Logout successful",
     });
-  };
+  }
 
-  me = async (req: Request, res: Response): Promise<Response> => {
+  async me(req: Request, res: Response): Promise<Response> {
     if (!req.user) {
       throw new UnauthorizedError();
     }
@@ -82,5 +83,5 @@ export class AuthController {
       message: "Current user fetched successfully",
       data: req.user,
     });
-  };
+  }
 }
