@@ -39,8 +39,14 @@ logs
 .idea
 
 # ==========================================
-# macOS
+# macOS (AppleDouble / Finder metadata)
 # ==========================================
 .DS_Store
+**/.DS_Store
 ._*
+**/._*
+.AppleDouble
+.Spotlight-V100
+.Trashes
 
+CODE_FLOW.md

@@ -1,1 +1,3 @@
+#!/usr/bin/env sh
+find . -name '._*' -not -path './.git/*' -delete 2>/dev/null
 bunx lint-staged

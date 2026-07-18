@@ -1,0 +1,98 @@
+import type { Request, Response } from "express";
+
+import type { CreatePollInput, UpdatePollInput } from "./poll.schema";
+import { pollService, type PollService } from "./poll.services";
+import { UnauthorizedError } from "../../errors/unauthorized.error";
+import { sendSuccess } from "../../utils/response";
+
+export class PollController {
+  constructor(private readonly service: PollService = pollService) {}
+
+  create = async (
+    req: Request<Record<string, never>, unknown, CreatePollInput>,
+    res: Response,
+  ): Promise<Response> => {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+
+    const data = await this.service.createPoll(req.user.id, req.body);
+
+    return sendSuccess(res, {
+      statusCode: 201,
+      message: "Poll created successfully",
+      data,
+    });
+  };
+
+  getById = async (
+    req: Request<{ id: string }>,
+    res: Response,
+  ): Promise<Response> => {
+    const data = await this.service.getById(req.params.id);
+
+    return sendSuccess(res, {
+      message: "Poll fetched successfully",
+      data,
+    });
+  };
+
+  getByShareId = async (req: Request<{ shareId: string }>, res: Response) => {
+    const data = await this.service.getById(req.params.shareId);
+
+    return sendSuccess(res, {
+      message: "Poll fetched successfully",
+      data,
+    });
+  };
+
+  listMine = async (req: Request, res: Response): Promise<Response> => {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+
+    const data = await this.service.listByCreator(req.user.id);
+
+    return sendSuccess(res, {
+      message: "Poll fetched successfully",
+      data,
+    });
+  };
+
+  update = async (
+    req: Request<{ id: string }, unknown, UpdatePollInput>,
+    res: Response,
+  ): Promise<Response> => {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+
+    const data = await this.service.updatePoll(
+      req.params.id,
+      req.user.id,
+      req.body,
+    );
+
+    return sendSuccess(res, {
+      message: "Poll updated successfully",
+      data,
+    });
+  };
+
+  delete = async (
+    req: Request<{ id: string }>,
+    res: Response,
+  ): Promise<Response> => {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+
+    await this.service.deletePoll(req.params.id, req.user.id);
+
+    return sendSuccess(res, {
+      message: "Poll deleted successfully",
+    });
+  };
+}
+
+export const pollController = new PollController();
