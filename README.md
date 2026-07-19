@@ -104,18 +104,40 @@ stored in secure `httpOnly` cookies and rotated through one-time Redis sessions.
 
 The polls API is mounted at `/api/v1/polls`.
 
-| Method   | Endpoint            | Auth | Purpose                                      |
-| -------- | ------------------- | ---- | -------------------------------------------- |
-| `POST`   | `/`                 | Yes  | Create a poll (metadata only)                |
-| `GET`    | `/`                 | Yes  | List polls owned by the authenticated user   |
-| `GET`    | `/share/:shareId`   | No   | Fetch a poll by share ID                     |
-| `GET`    | `/:id`              | No   | Fetch a poll by ID                           |
-| `PATCH`  | `/:id`              | Yes  | Update a poll owned by the authenticated user|
-| `DELETE` | `/:id`              | Yes  | Delete a poll owned by the authenticated user|
+| Method   | Endpoint          | Auth | Purpose                                       |
+| -------- | ----------------- | ---- | --------------------------------------------- |
+| `POST`   | `/`               | Yes  | Create a poll (metadata only)                 |
+| `GET`    | `/`               | Yes  | List polls owned by the authenticated user    |
+| `GET`    | `/share/:shareId` | No   | Fetch a poll by share ID                      |
+| `GET`    | `/:id`            | No   | Fetch a poll by ID                            |
+| `PATCH`  | `/:id`            | Yes  | Update a poll owned by the authenticated user |
+| `DELETE` | `/:id`            | Yes  | Delete a poll owned by the authenticated user |
 
 Poll records currently store metadata (title, description, status, expiration,
 share ID, and visibility flags). Options, voting, and live result updates are
 not implemented yet.
+
+## Questions API
+
+The questions API is nested under polls at `/api/v1/polls/:pollId/questions`.
+
+| Method   | Endpoint | Auth | Purpose                                                          |
+| -------- | -------- | ---- | ---------------------------------------------------------------- |
+| `POST`   | `/`      | Yes  | Create a question on a poll owned by the authenticated user      |
+| `GET`    | `/`      | No   | List questions for a poll, ordered by `displayOrder`             |
+| `GET`    | `/:id`   | No   | Fetch a question by ID within a poll                             |
+| `PATCH`  | `/:id`   | Yes  | Update a question on a poll owned by the authenticated user      |
+| `DELETE` | `/:id`   | Yes  | Delete a question on a poll owned by the authenticated user      |
+
+Create/update body fields:
+
+- `title` (required on create): 3–500 characters
+- `isMandatory` (optional): boolean, defaults to `true` on create
+- `displayOrder` (required on create): non-negative integer unique per poll
+
+Mutations require authentication and poll ownership. Path params (`pollId`,
+`id`) must be UUIDs. Duplicate `displayOrder` values for the same poll return
+`409 Conflict`.
 
 ## Backend Commands
 
@@ -124,7 +146,7 @@ Run these commands from `apps/backend`:
 ```bash
 bun run dev          # Start with hot reload
 bun run start        # Start without hot reload
-bun test             # Run tests
+bun test             # Run tests (none currently)
 bun run typecheck    # Check TypeScript
 bun run lint         # Run ESLint
 bun run lint:fix     # Fix supported lint issues
@@ -158,20 +180,20 @@ The pre-commit hook runs lint-staged:
 - Auth API: register, login, refresh, logout, and `/me`
 - JWT access tokens and Redis-backed one-time refresh-token rotation
 - Central validation, error classes, and API response helpers
-- Poll metadata CRUD: create, list own, get by ID, update, delete
-- Poll schema and migration (including share IDs and ownership checks)
-- Auth unit tests and code-quality tooling (ESLint, Prettier, Husky)
+- Poll metadata CRUD: create, list own, get by ID, get by share ID, update, delete
+- Question CRUD nested under polls, with ownership checks and UUID param validation
+- Questions schema and migration (unique `displayOrder` per poll, cascade on poll delete)
+- Code-quality tooling (ESLint, Prettier, Husky)
 
 ### In progress / known gaps
 
-- Share-link lookup (`GET /polls/share/:shareId`) currently resolves by poll ID,
-  so normal share IDs can return 404
-- Polls store metadata only — no options/choices table or create payload yet
-- Public poll reads do not enforce expiration, status, `resultPublished`, or
+- Polls and questions store structure only — no options/choices or create payload yet
+- Public poll/question reads do not enforce expiration, status, `resultPublished`, or
   `requireAuthentication`
 - Creator role is not enforced; any authenticated user can create polls
-- List-own endpoint has no query pagination
-- No poll tests yet
+- List-own polls endpoint has no query pagination
+- Question reordering across unique `displayOrder` values has no dedicated transaction/API
+- No automated tests currently in the repo
 
 ### Remaining
 
@@ -181,5 +203,5 @@ The pre-commit hook runs lint-staged:
 - Email verification and password reset
 - Authentication rate limiting and account lockout
 - Frontend auth flows and polling UI (still the Vite starter)
-- Broader test coverage (routes, Redis/cookie flows, polls, e2e)
+- Broader test coverage (routes, Redis/cookie flows, polls, questions, e2e)
 - CI, health checks, and production deployment config
