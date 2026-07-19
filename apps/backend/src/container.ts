@@ -14,6 +14,10 @@ import { PollController } from "./modules/polls/poll.controller";
 import { PollRepository } from "./modules/polls/poll.repository";
 import { createPollRouter } from "./modules/polls/poll.routes";
 import { PollService } from "./modules/polls/poll.services";
+import { QuestionController } from "./modules/questions/question.controller";
+import { QuestionRepository } from "./modules/questions/question.repository";
+import { createQuestionRouter } from "./modules/questions/question.routes";
+import { QuestionService } from "./modules/questions/question.service";
 import { createApiRouter } from "./routes/index";
 import { createV1Router } from "./routes/v1Router";
 import { createHttpServer } from "./server";
@@ -40,6 +44,10 @@ export function createContainer(): AppContainer {
   const pollService = new PollService(pollRepository);
   const pollController = new PollController(pollService);
 
+  const questionRepository = new QuestionRepository(postgres.db);
+  const questionService = new QuestionService(questionRepository);
+  const questionController = new QuestionController(questionService);
+
   const authRouter = createAuthRouter({
     controller: authController,
     authenticate,
@@ -48,7 +56,11 @@ export function createContainer(): AppContainer {
     controller: pollController,
     authenticate,
   });
-  const v1Router = createV1Router({ authRouter, pollRouter });
+  const questionRouter = createQuestionRouter({
+    controller: questionController,
+    authenticate,
+  });
+  const v1Router = createV1Router({ authRouter, pollRouter, questionRouter });
   const apiRouter = createApiRouter(v1Router);
   const app = createApp(apiRouter);
   const server = createHttpServer(app);
