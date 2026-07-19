@@ -33,12 +33,13 @@ export class QuestionRepository {
     return question;
   }
 
-  async findById(id: string): Promise<PublicQuestion | null> {
+  async findById(id: string, pollId: string): Promise<PublicQuestion | null> {
     const [question] = await this.db
       .select(publicQuestionSelect)
       .from(questions)
-      .where(eq(questions.id, id))
+      .where(and(eq(questions.id, id), eq(questions.pollId, pollId)))
       .limit(1);
+
     return question ?? null;
   }
 
@@ -69,6 +70,7 @@ export class QuestionRepository {
       .delete(questions)
       .where(and(eq(questions.id, id), eq(questions.pollId, pollId)))
       .returning({ id: questions.id });
+
     return deleted.length > 0;
   }
 }

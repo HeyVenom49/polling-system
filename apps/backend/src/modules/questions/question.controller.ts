@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { NotFoundError } from "../../errors/not-found.error";
 import { UnauthorizedError } from "../../errors/unauthorized.error";
 import { sendSuccess } from "../../utils/response";
 import type {
@@ -19,7 +18,11 @@ export class QuestionController {
       throw new UnauthorizedError();
     }
 
-    const data = await this.service.createQuestion(req.params.pollId, req.body);
+    const data = await this.service.createQuestion(
+      req.params.pollId,
+      req.user.id,
+      req.body,
+    );
 
     return sendSuccess(res, {
       statusCode: 201,
@@ -35,7 +38,7 @@ export class QuestionController {
     const data = await this.service.listByPollId(req.params.pollId);
 
     return sendSuccess(res, {
-      message: "Question fetched successfully",
+      message: "Questions fetched successfully",
       data,
     });
   }
@@ -44,11 +47,7 @@ export class QuestionController {
     req: Request<{ id: string; pollId: string }>,
     res: Response,
   ): Promise<Response> {
-    const data = await this.service.getById(req.params.id);
-
-    if (data.pollId !== req.params.pollId) {
-      throw new NotFoundError("Question not found");
-    }
+    const data = await this.service.getById(req.params.id, req.params.pollId);
 
     return sendSuccess(res, {
       message: "Question fetched successfully",
@@ -67,6 +66,7 @@ export class QuestionController {
     const data = await this.service.updateQuestion(
       req.params.id,
       req.params.pollId,
+      req.user.id,
       req.body,
     );
 
@@ -84,7 +84,11 @@ export class QuestionController {
       throw new UnauthorizedError();
     }
 
-    await this.service.deleteQuestion(req.params.id, req.params.pollId);
+    await this.service.deleteQuestion(
+      req.params.id,
+      req.params.pollId,
+      req.user.id,
+    );
 
     return sendSuccess(res, {
       message: "Question deleted successfully",

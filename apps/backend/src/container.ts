@@ -45,7 +45,10 @@ export function createContainer(): AppContainer {
   const pollController = new PollController(pollService);
 
   const questionRepository = new QuestionRepository(postgres.db);
-  const questionService = new QuestionService(questionRepository);
+  const questionService = new QuestionService(
+    questionRepository,
+    pollRepository,
+  );
   const questionController = new QuestionController(questionService);
 
   const authRouter = createAuthRouter({

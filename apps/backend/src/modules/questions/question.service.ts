@@ -1,5 +1,6 @@
 import { ConflictError } from "../../errors/conflict.error";
 import { NotFoundError } from "../../errors/not-found.error";
+import type { PollRepository } from "../polls/poll.repository";
 import type { QuestionRepository } from "./question.repository";
 import type {
   CreateQuestionInput,
@@ -16,13 +17,39 @@ function isUniqueViolation(error: unknown) {
   );
 }
 
+function isForeignKeyViolation(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23503"
+  );
+}
+
 export class QuestionService {
-  constructor(private readonly repository: QuestionRepository) {}
+  constructor(
+    private readonly repository: QuestionRepository,
+    private readonly pollRepository: PollRepository,
+  ) {}
+
+  private async assertPollOwnedBy(
+    pollId: string,
+    creatorId: string,
+  ): Promise<void> {
+    const poll = await this.pollRepository.findById(pollId);
+
+    if (!poll || poll.creatorId !== creatorId) {
+      throw new NotFoundError("Poll not found");
+    }
+  }
 
   async createQuestion(
     pollId: string,
+    creatorId: string,
     input: CreateQuestionInput,
   ): Promise<PublicQuestion> {
+    await this.assertPollOwnedBy(pollId, creatorId);
+
     try {
       return await this.repository.createQuestion({ ...input, pollId });
     } catch (error) {
@@ -31,12 +58,15 @@ export class QuestionService {
           "A question with this display order already exists for this poll",
         );
       }
+      if (isForeignKeyViolation(error)) {
+        throw new NotFoundError("Poll not found");
+      }
       throw error;
     }
   }
 
-  async getById(id: string): Promise<PublicQuestion> {
-    const question = await this.repository.findById(id);
+  async getById(id: string, pollId: string): Promise<PublicQuestion> {
+    const question = await this.repository.findById(id, pollId);
 
     if (!question) {
       throw new NotFoundError("Question not found");
@@ -46,14 +76,17 @@ export class QuestionService {
   }
 
   async listByPollId(pollId: string): Promise<PublicQuestion[]> {
-    return await this.repository.findByPollId(pollId);
+    return this.repository.findByPollId(pollId);
   }
 
   async updateQuestion(
     id: string,
     pollId: string,
+    creatorId: string,
     data: UpdateQuestionInput,
   ): Promise<PublicQuestion> {
+    await this.assertPollOwnedBy(pollId, creatorId);
+
     try {
       const question = await this.repository.updateQuestion(id, pollId, data);
 
@@ -75,7 +108,13 @@ export class QuestionService {
     }
   }
 
-  async deleteQuestion(id: string, pollId: string): Promise<void> {
+  async deleteQuestion(
+    id: string,
+    pollId: string,
+    creatorId: string,
+  ): Promise<void> {
+    await this.assertPollOwnedBy(pollId, creatorId);
+
     const deleted = await this.repository.deleteQuestion(id, pollId);
 
     if (!deleted) {
