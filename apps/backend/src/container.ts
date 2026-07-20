@@ -21,6 +21,10 @@ import { QuestionService } from "./modules/questions/question.service";
 import { createApiRouter } from "./routes/index";
 import { createV1Router } from "./routes/v1Router";
 import { createHttpServer } from "./server";
+import { OptionRepository } from "./modules/options/option.repository";
+import { OptionService } from "./modules/options/option.service";
+import { OptionController } from "./modules/options/option.controller";
+import { createOptionRouter } from "./modules/options/option.routes";
 
 export type AppContainer = {
   app: Express;
@@ -51,6 +55,14 @@ export function createContainer(): AppContainer {
   );
   const questionController = new QuestionController(questionService);
 
+  const optionRepository = new OptionRepository(postgres.db);
+  const optionService = new OptionService(
+    optionRepository,
+    questionRepository,
+    pollRepository,
+  );
+  const optionController = new OptionController(optionService);
+
   const authRouter = createAuthRouter({
     controller: authController,
     authenticate,
@@ -63,7 +75,17 @@ export function createContainer(): AppContainer {
     controller: questionController,
     authenticate,
   });
-  const v1Router = createV1Router({ authRouter, pollRouter, questionRouter });
+  const optionRouter = createOptionRouter({
+    controller: optionController,
+    authenticate,
+  });
+
+  const v1Router = createV1Router({
+    authRouter,
+    pollRouter,
+    questionRouter,
+    optionRouter,
+  });
   const apiRouter = createApiRouter(v1Router);
   const app = createApp(apiRouter);
   const server = createHttpServer(app);
