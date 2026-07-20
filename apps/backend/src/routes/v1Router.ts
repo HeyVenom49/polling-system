@@ -16,8 +16,8 @@ export function createV1Router({
   const router = Router();
 
   router.use("/auth", authRouter);
-  router.use("/poll/:pollId/questions/:questionId/options", optionRouter);
-  router.use("/poll/:pollId/questions", questionRouter);
+  router.use("/polls/:pollId/questions/:questionId/options", optionRouter);
+  router.use("/polls/:pollId/questions", questionRouter);
   router.use("/polls", pollRouter);
 
   return router;
