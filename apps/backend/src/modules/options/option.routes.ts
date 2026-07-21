@@ -14,11 +14,13 @@ import {
 export type OptionRouterDeps = {
   controller: OptionController;
   authenticate: RequestHandler;
+  optionalAuthenticate: RequestHandler;
 };
 
 export function createOptionRouter({
   controller,
   authenticate,
+  optionalAuthenticate,
 }: OptionRouterDeps): Router {
   const optionRouter = Router({ mergeParams: true });
 
@@ -32,12 +34,14 @@ export function createOptionRouter({
 
   optionRouter.get(
     "/",
+    optionalAuthenticate,
     validateParams(optionQuestionParamsSchema),
     controller.listByQuestionId.bind(controller),
   );
 
   optionRouter.get(
     "/:id",
+    optionalAuthenticate,
     validateParams(optionResourceParamsSchema),
     controller.getById.bind(controller),
   );

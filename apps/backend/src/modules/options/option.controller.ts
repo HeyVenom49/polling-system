@@ -24,6 +24,7 @@ export class OptionController {
       req.params.questionId,
       req.user.id,
       req.body,
+      req.user.role,
     );
 
     return sendSuccess(res, {
@@ -40,6 +41,8 @@ export class OptionController {
     const data = await this.service.listByQuestionId(
       req.params.pollId,
       req.params.questionId,
+      req.user?.id,
+      req.user?.role,
     );
 
     return sendSuccess(res, {
@@ -56,6 +59,8 @@ export class OptionController {
       req.params.id,
       req.params.pollId,
       req.params.questionId,
+      req.user?.id,
+      req.user?.role,
     );
 
     return sendSuccess(res, {
@@ -82,6 +87,7 @@ export class OptionController {
       req.params.questionId,
       req.user.id,
       req.body,
+      req.user.role,
     );
 
     return sendSuccess(res, {
@@ -103,6 +109,7 @@ export class OptionController {
       req.params.pollId,
       req.params.questionId,
       req.user.id,
+      req.user.role,
     );
 
     return sendSuccess(res, {

@@ -35,5 +35,25 @@ export const updatePollSchema = z
     message: "At least one field is required.",
   });
 
+export const pollIdParamsSchema = z
+  .object({
+    id: z.uuid(),
+  })
+  .strict();
+
+export const pollShareParamsSchema = z
+  .object({
+    shareId: z.uuid(),
+  })
+  .strict();
+
+export const listPollsQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0),
+  })
+  .strict();
+
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 export type UpdatePollInput = z.infer<typeof updatePollSchema>;
+export type ListPollsQuery = z.infer<typeof listPollsQuerySchema>;

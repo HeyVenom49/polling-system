@@ -19,3 +19,24 @@ export type PollResults = {
   totalResponses: number;
   questions: QuestionResult[];
 };
+
+export type ResponseDayCount = {
+  date: string;
+  count: number;
+};
+
+export type RecentResponse = {
+  id: string;
+  identityType: "user" | "guest";
+  submittedAt: Date;
+};
+
+export type PollAnalytics = {
+  pollId: string;
+  totalResponses: number;
+  guestResponses: number;
+  authenticatedResponses: number;
+  responsesByDay: ResponseDayCount[];
+  recentResponses: RecentResponse[];
+  results: PollResults;
+};

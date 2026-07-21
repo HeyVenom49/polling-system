@@ -1,5 +1,6 @@
 import { ConflictError } from "../../errors/conflict.error";
 import { NotFoundError } from "../../errors/not-found.error";
+import { assertPollReadable } from "../polls/poll-access";
 import type { PollRepository } from "../polls/poll.repository";
 import type { QuestionRepository } from "../questions/question.repository";
 import type { OptionRepository } from "./option.repository";
@@ -45,11 +46,16 @@ export class OptionService {
 
   private async assertPollOwnedBy(
     pollId: string,
-    creatorId: string,
+    actorId: string,
+    actorRole?: string,
   ): Promise<void> {
     const poll = await this.pollRepository.findById(pollId);
 
-    if (!poll || poll.creatorId !== creatorId) {
+    if (!poll) {
+      throw new NotFoundError("Poll not found");
+    }
+
+    if (poll.creatorId !== actorId && actorRole !== "admin") {
       throw new NotFoundError("Poll not found");
     }
   }
@@ -61,17 +67,32 @@ export class OptionService {
     const question = await this.questionRepository.findById(questionId, pollId);
 
     if (!question) {
-      throw new NotFoundError("Question is found");
+      throw new NotFoundError("Question not found");
     }
+  }
+
+  private async assertPollReadableForViewer(
+    pollId: string,
+    viewerId?: string,
+    viewerRole?: string,
+  ): Promise<void> {
+    const poll = await this.pollRepository.findById(pollId);
+
+    if (!poll) {
+      throw new NotFoundError("Poll not found");
+    }
+
+    assertPollReadable(poll, viewerId, viewerRole);
   }
 
   async createOption(
     pollId: string,
     questionId: string,
-    creatorId: string,
+    actorId: string,
     input: CreateOptionInput,
+    actorRole?: string,
   ): Promise<PublicOption> {
-    await this.assertPollOwnedBy(pollId, creatorId);
+    await this.assertPollOwnedBy(pollId, actorId, actorRole);
     await this.assertQuestionInPoll(questionId, pollId);
 
     try {
@@ -91,7 +112,10 @@ export class OptionService {
     id: string,
     pollId: string,
     questionId: string,
+    viewerId?: string,
+    viewerRole?: string,
   ): Promise<PublicOption> {
+    await this.assertPollReadableForViewer(pollId, viewerId, viewerRole);
     await this.assertQuestionInPoll(questionId, pollId);
 
     const option = await this.repository.findById(id, questionId);
@@ -105,7 +129,10 @@ export class OptionService {
   async listByQuestionId(
     pollId: string,
     questionId: string,
+    viewerId?: string,
+    viewerRole?: string,
   ): Promise<PublicOption[]> {
+    await this.assertPollReadableForViewer(pollId, viewerId, viewerRole);
     await this.assertQuestionInPoll(questionId, pollId);
 
     return this.repository.findByQuestionId(questionId);
@@ -115,10 +142,11 @@ export class OptionService {
     id: string,
     pollId: string,
     questionId: string,
-    creatorId: string,
+    actorId: string,
     data: UpdateOptionInput,
+    actorRole?: string,
   ): Promise<PublicOption> {
-    await this.assertPollOwnedBy(pollId, creatorId);
+    await this.assertPollOwnedBy(pollId, actorId, actorRole);
     await this.assertQuestionInPoll(questionId, pollId);
 
     try {
@@ -143,9 +171,10 @@ export class OptionService {
     id: string,
     pollId: string,
     questionId: string,
-    creatorId: string,
+    actorId: string,
+    actorRole?: string,
   ): Promise<void> {
-    await this.assertPollOwnedBy(pollId, creatorId);
+    await this.assertPollOwnedBy(pollId, actorId, actorRole);
     await this.assertQuestionInPoll(questionId, pollId);
 
     const deleted = await this.repository.deleteOption(id, questionId);

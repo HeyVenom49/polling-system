@@ -1,6 +1,14 @@
 import type { Request, Response } from "express";
 
-import type { LoginInput, RegisterInput } from "./auth.schema";
+import type {
+  ChangePasswordInput,
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+  ResendVerificationInput,
+  ResetPasswordInput,
+  VerifyEmailInput,
+} from "./auth.schema";
 import type { AuthService } from "./auth.service";
 import {
   clearRefreshTokenCookie,
@@ -20,7 +28,7 @@ export class AuthController {
     const data = await this.service.register(req.body);
     return sendSuccess(res, {
       statusCode: 201,
-      message: "User registered successfully",
+      message: "User registered successfully. Check your email to verify.",
       data,
     });
   }
@@ -38,6 +46,61 @@ export class AuthController {
         user,
         accessToken: tokens.accessToken,
       },
+    });
+  }
+
+  async verifyEmail(
+    req: Request<Record<string, never>, unknown, VerifyEmailInput>,
+    res: Response,
+  ): Promise<Response> {
+    const data = await this.service.verifyEmail(req.body);
+    return sendSuccess(res, {
+      message: "Email verified successfully",
+      data,
+    });
+  }
+
+  async resendVerification(
+    req: Request<Record<string, never>, unknown, ResendVerificationInput>,
+    res: Response,
+  ): Promise<Response> {
+    const data = await this.service.resendVerification(req.body);
+    return sendSuccess(res, {
+      message: data.message,
+    });
+  }
+
+  async forgotPassword(
+    req: Request<Record<string, never>, unknown, ForgotPasswordInput>,
+    res: Response,
+  ): Promise<Response> {
+    const data = await this.service.forgotPassword(req.body);
+    return sendSuccess(res, {
+      message: data.message,
+    });
+  }
+
+  async resetPassword(
+    req: Request<Record<string, never>, unknown, ResetPasswordInput>,
+    res: Response,
+  ): Promise<Response> {
+    await this.service.resetPassword(req.body);
+    return sendSuccess(res, {
+      message: "Password reset successfully",
+    });
+  }
+
+  async changePassword(
+    req: Request<Record<string, never>, unknown, ChangePasswordInput>,
+    res: Response,
+  ): Promise<Response> {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+
+    await this.service.changePassword(req.user.id, req.body);
+    return sendSuccess(res, {
+      message: "Password changed successfully",
     });
   }
 

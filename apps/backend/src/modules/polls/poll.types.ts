@@ -1,4 +1,6 @@
 import type { polls } from "../../database/schema";
+import type { PublicOption } from "../options/option.types";
+import type { PublicQuestion } from "../questions/question.types";
 import type { CreatePollInput } from "./poll.schema";
 
 type PollRecord = typeof polls.$inferSelect;
@@ -34,3 +36,19 @@ export type UpdatePollData = Partial<
     | "resultPublished"
   >
 >;
+
+export type PollFormQuestion = PublicQuestion & {
+  options: PublicOption[];
+};
+
+export type PollForm = {
+  poll: PublicPoll;
+  questions: PollFormQuestion[];
+};
+
+export type PaginatedPolls = {
+  items: PublicPoll[];
+  total: number;
+  limit: number;
+  offset: number;
+};

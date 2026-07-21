@@ -21,6 +21,8 @@ const passwordSchema = z
 
 const emailSchema = z.string().trim().toLowerCase().email();
 
+const tokenSchema = z.string().trim().uuid();
+
 export const registerSchema = z
   .object({
     username: usernameSchema,
@@ -36,5 +38,46 @@ export const loginSchema = z
   })
   .strict();
 
+export const verifyEmailSchema = z
+  .object({
+    token: tokenSchema,
+  })
+  .strict();
+
+export const resendVerificationSchema = z
+  .object({
+    email: emailSchema,
+  })
+  .strict();
+
+export const forgotPasswordSchema = z
+  .object({
+    email: emailSchema,
+  })
+  .strict();
+
+export const resetPasswordSchema = z
+  .object({
+    token: tokenSchema,
+    password: passwordSchema,
+  })
+  .strict();
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: passwordSchema,
+    newPassword: passwordSchema,
+  })
+  .strict()
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from the current password.",
+    path: ["newPassword"],
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

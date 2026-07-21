@@ -21,6 +21,12 @@ export const updateQuestionSchema = z
     message: "At least one field is required.",
   });
 
+export const reorderQuestionsSchema = z
+  .object({
+    orderedIds: z.array(z.uuid()).min(1),
+  })
+  .strict();
+
 export const questionPollParamsSchema = z
   .object({
     pollId: z.uuid(),
@@ -36,3 +42,4 @@ export const questionResourceParamsSchema = z
 
 export type CreateQuestionInput = z.infer<typeof createQuestionSchema>;
 export type UpdateQuestionInput = z.infer<typeof updateQuestionSchema>;
+export type ReorderQuestionsInput = z.infer<typeof reorderQuestionsSchema>;

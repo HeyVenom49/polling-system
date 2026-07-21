@@ -2,10 +2,12 @@ import { ConflictError } from "../../errors/conflict.error";
 import { NotFoundError } from "../../errors/not-found.error";
 import { UnauthorizedError } from "../../errors/unauthorized.error";
 import { ValidationError } from "../../errors/validation.error";
+import type { PollRealtime } from "../../infrastructure/socket/poll-realtime";
 import type { OptionRepository } from "../options/option.repository";
 import type { PollRepository } from "../polls/poll.repository";
 import type { PublicPoll } from "../polls/poll.types";
 import type { QuestionRepository } from "../questions/question.repository";
+import type { ResultService } from "../results/result.service";
 import type { ResponseRepository } from "./response.repository";
 import type { SubmitResponseInput } from "./response.schema";
 import type {
@@ -29,6 +31,8 @@ export class ResponseService {
     private readonly pollRepository: PollRepository,
     private readonly questionRepository: QuestionRepository,
     private readonly optionRepository: OptionRepository,
+    private readonly pollRealtime: PollRealtime,
+    private readonly resultService: ResultService,
   ) {}
 
   private async assertPollAcceptsResponse(pollId: string) {
@@ -116,6 +120,19 @@ export class ResponseService {
     }
   }
 
+  private async publishRealtimeUpdates(
+    pollId: string,
+    resultPublished: boolean,
+  ): Promise<void> {
+    const totalResponses = await this.resultService.getTotalResponses(pollId);
+    this.pollRealtime.responseSubmitted(pollId, totalResponses);
+
+    if (resultPublished) {
+      const results = await this.resultService.buildPollResults(pollId);
+      this.pollRealtime.resultsUpdated(results);
+    }
+  }
+
   async submitResponse(
     pollId: string,
     userId: string | undefined,
@@ -128,10 +145,14 @@ export class ResponseService {
     await this.validateAnswers(pollId, input.answers);
 
     try {
-      return await this.repository.createResponseWithAnswers(
+      const saved = await this.repository.createResponseWithAnswers(
         { pollId, ...identity },
         input.answers,
       );
+
+      await this.publishRealtimeUpdates(pollId, poll.resultPublished);
+
+      return saved;
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictError("You have already submitted this poll");

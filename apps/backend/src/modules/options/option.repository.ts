@@ -1,5 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
-import { options } from "../../database/schema";
+import { options, questions } from "../../database/schema";
 import type { Database } from "../../infrastructure/postgres/postgres-client";
 import type {
   CreateOptionData,
@@ -48,6 +48,15 @@ export class OptionRepository {
       .from(options)
       .where(eq(options.questionId, questionId))
       .orderBy(asc(options.displayOrder));
+  }
+
+  async findByPollId(pollId: string): Promise<PublicOption[]> {
+    return this.db
+      .select(publicOptionSelect)
+      .from(options)
+      .innerJoin(questions, eq(options.questionId, questions.id))
+      .where(eq(questions.pollId, pollId))
+      .orderBy(asc(questions.displayOrder), asc(options.displayOrder));
   }
 
   async updateOption(

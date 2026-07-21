@@ -8,17 +8,20 @@ import {
   createQuestionSchema,
   questionPollParamsSchema,
   questionResourceParamsSchema,
+  reorderQuestionsSchema,
   updateQuestionSchema,
 } from "./question.schema";
 
 export type QuestionRouterDeps = {
   controller: QuestionController;
   authenticate: RequestHandler;
+  optionalAuthenticate: RequestHandler;
 };
 
 export function createQuestionRouter({
   controller,
   authenticate,
+  optionalAuthenticate,
 }: QuestionRouterDeps): Router {
   const questionRouter = Router({ mergeParams: true });
 
@@ -30,14 +33,24 @@ export function createQuestionRouter({
     controller.create.bind(controller),
   );
 
+  questionRouter.put(
+    "/reorder",
+    authenticate,
+    validateParams(questionPollParamsSchema),
+    validateBody(reorderQuestionsSchema),
+    controller.reorder.bind(controller),
+  );
+
   questionRouter.get(
     "/",
+    optionalAuthenticate,
     validateParams(questionPollParamsSchema),
     controller.listByPollId.bind(controller),
   );
 
   questionRouter.get(
     "/:id",
+    optionalAuthenticate,
     validateParams(questionResourceParamsSchema),
     controller.getById.bind(controller),
   );
