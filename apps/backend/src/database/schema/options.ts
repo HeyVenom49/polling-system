@@ -9,7 +9,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { questions } from "./question";
+import { questions } from "./questions";
 
 export const options = pgTable(
   "options",

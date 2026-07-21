@@ -10,7 +10,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { polls } from "./poll";
+import { polls } from "./polls";
 
 export const questions = pgTable(
   "questions",
@@ -30,9 +30,10 @@ export const questions = pgTable(
   },
   (table) => ({
     pollIdIdx: index("idx_questions_poll_id").on(table.pollId),
-    pollDisplayOrderUnique: unique(
-      "questions_poll_id_display_order_unique",
-    ).on(table.pollId, table.displayOrder),
+    pollDisplayOrderUnique: unique("questions_poll_id_display_order_unique").on(
+      table.pollId,
+      table.displayOrder,
+    ),
     displayOrderNonNegative: check(
       "questions_display_order_non_negative",
       sql`${table.displayOrder} >= 0`,

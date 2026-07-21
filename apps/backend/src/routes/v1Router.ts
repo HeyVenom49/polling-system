@@ -5,6 +5,7 @@ export type V1RouterDeps = {
   pollRouter: Router;
   questionRouter: Router;
   optionRouter: Router;
+  responseRouter: Router;
 };
 
 export function createV1Router({
@@ -12,12 +13,14 @@ export function createV1Router({
   pollRouter,
   questionRouter,
   optionRouter,
+  responseRouter,
 }: V1RouterDeps): Router {
   const router = Router();
 
   router.use("/auth", authRouter);
   router.use("/polls/:pollId/questions/:questionId/options", optionRouter);
   router.use("/polls/:pollId/questions", questionRouter);
+  router.use("/polls/:pollId/responses", responseRouter);
   router.use("/polls", pollRouter);
 
   return router;

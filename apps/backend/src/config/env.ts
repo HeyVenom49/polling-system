@@ -52,6 +52,10 @@ const envSchema = z.object({
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
   CORS_ORIGIN: z.url().default("http://localhost:5173"),
   COOKIE_DOMAIN: z.string().trim().min(1).optional(),
+  RATE_LIMIT_WINDOW: tokenExpiresInSchema("15m"),
+  RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(100),
+  AUTH_RATE_LIMIT_WINDOW: tokenExpiresInSchema("15m"),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(5),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -66,4 +70,6 @@ export const env = {
   ...parsedEnv.data,
   ACCESS_TOKEN_TTL_MS: ms(parsedEnv.data.ACCESS_TOKEN_EXPIRES_IN),
   REFRESH_TOKEN_TTL_MS: ms(parsedEnv.data.REFRESH_TOKEN_EXPIRES_IN),
+  RATE_LIMIT_WINDOW_MS: ms(parsedEnv.data.RATE_LIMIT_WINDOW),
+  AUTH_RATE_LIMIT_WINDOW_MS: ms(parsedEnv.data.AUTH_RATE_LIMIT_WINDOW),
 } as const;

@@ -8,7 +8,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { users } from "./user";
+import { users } from "./users";
 
 export const pollStatusEnum = pgEnum("poll_status", ["open", "closed"]);
 

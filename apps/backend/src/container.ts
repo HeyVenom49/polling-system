@@ -1,7 +1,12 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { createApp } from "./app";
-import { createAuthenticate } from "./middleware/auth.middleware";
+import {
+  createAuthenticate,
+  createOptionalAuthenticate,
+} from "./middleware/auth.middleware";
+import { createResolveGuest } from "./middleware/guest.middleware";
+import { createGlobalRateLimiter, createAuthRateLimiter } from "./middleware/rate-limit.middleware";
 import { createRedisCache } from "./infrastructure/cache/redis-cache";
 import { createPostgresClient } from "./infrastructure/postgres/postgres-client";
 import { createRedisClient } from "./infrastructure/redis/redis-client";
@@ -25,6 +30,12 @@ import { OptionRepository } from "./modules/options/option.repository";
 import { OptionService } from "./modules/options/option.service";
 import { OptionController } from "./modules/options/option.controller";
 import { createOptionRouter } from "./modules/options/option.routes";
+import { GuestRepository } from "./modules/guests/guest.repository";
+import { GuestService } from "./modules/guests/guest.service";
+import { ResponseRepository } from "./modules/responses/response.repository";
+import { ResponseService } from "./modules/responses/response.service";
+import { ResponseController } from "./modules/responses/response.controller";
+import { createResponseRouter } from "./modules/responses/response.routes";
 
 export type AppContainer = {
   app: Express;
@@ -43,6 +54,7 @@ export function createContainer(): AppContainer {
   const authService = new AuthService(authRepository, authSessionRepository);
   const authController = new AuthController(authService);
   const authenticate = createAuthenticate(authRepository);
+  const optionalAuthenticate = createOptionalAuthenticate(authRepository);
 
   const pollRepository = new PollRepository(postgres.db);
   const pollService = new PollService(pollRepository);
@@ -63,9 +75,23 @@ export function createContainer(): AppContainer {
   );
   const optionController = new OptionController(optionService);
 
+  const guestRepository = new GuestRepository(postgres.db);
+  const guestService = new GuestService(guestRepository);
+  const resolveGuest = createResolveGuest(guestService);
+
+  const responseRepository = new ResponseRepository(postgres.db);
+  const responseService = new ResponseService(
+    responseRepository,
+    pollRepository,
+    questionRepository,
+    optionRepository,
+  );
+  const responseController = new ResponseController(responseService);
+
   const authRouter = createAuthRouter({
     controller: authController,
     authenticate,
+    authRateLimiter: createAuthRateLimiter(redis.client),
   });
   const pollRouter = createPollRouter({
     controller: pollController,
@@ -79,15 +105,22 @@ export function createContainer(): AppContainer {
     controller: optionController,
     authenticate,
   });
+  const responseRouter = createResponseRouter({
+    controller: responseController,
+    optionalAuthenticate,
+    resolveGuest,
+  });
 
   const v1Router = createV1Router({
     authRouter,
     pollRouter,
     questionRouter,
     optionRouter,
+    responseRouter,
   });
   const apiRouter = createApiRouter(v1Router);
-  const app = createApp(apiRouter);
+  const globalRateLimiter = createGlobalRateLimiter(redis.client);
+  const app = createApp({ apiRouter, globalRateLimiter });
   const server = createHttpServer(app);
 
   return {
