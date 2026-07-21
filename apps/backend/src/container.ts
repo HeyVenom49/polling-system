@@ -6,7 +6,10 @@ import {
   createOptionalAuthenticate,
 } from "./middleware/auth.middleware";
 import { createResolveGuest } from "./middleware/guest.middleware";
-import { createGlobalRateLimiter, createAuthRateLimiter } from "./middleware/rate-limit.middleware";
+import {
+  createGlobalRateLimiter,
+  createAuthRateLimiter,
+} from "./middleware/rate-limit.middleware";
 import { createRedisCache } from "./infrastructure/cache/redis-cache";
 import { createPostgresClient } from "./infrastructure/postgres/postgres-client";
 import { createRedisClient } from "./infrastructure/redis/redis-client";
@@ -36,6 +39,10 @@ import { ResponseRepository } from "./modules/responses/response.repository";
 import { ResponseService } from "./modules/responses/response.service";
 import { ResponseController } from "./modules/responses/response.controller";
 import { createResponseRouter } from "./modules/responses/response.routes";
+import { ResultRepository } from "./modules/results/result.repository";
+import { ResultService } from "./modules/results/result.service";
+import { ResultController } from "./modules/results/result.controller";
+import { createResultRouter } from "./modules/results/result.routes";
 
 export type AppContainer = {
   app: Express;
@@ -88,6 +95,15 @@ export function createContainer(): AppContainer {
   );
   const responseController = new ResponseController(responseService);
 
+  const resultRepository = new ResultRepository(postgres.db);
+  const resultService = new ResultService(
+    resultRepository,
+    pollRepository,
+    questionRepository,
+    optionRepository,
+  );
+  const resultController = new ResultController(resultService);
+
   const authRouter = createAuthRouter({
     controller: authController,
     authenticate,
@@ -110,6 +126,10 @@ export function createContainer(): AppContainer {
     optionalAuthenticate,
     resolveGuest,
   });
+  const resultRouter = createResultRouter({
+    controller: resultController,
+    optionalAuthenticate,
+  });
 
   const v1Router = createV1Router({
     authRouter,
@@ -117,6 +137,7 @@ export function createContainer(): AppContainer {
     questionRouter,
     optionRouter,
     responseRouter,
+    resultRouter,
   });
   const apiRouter = createApiRouter(v1Router);
   const globalRateLimiter = createGlobalRateLimiter(redis.client);
