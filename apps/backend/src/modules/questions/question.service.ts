@@ -1,6 +1,10 @@
 import { ConflictError } from "../../errors/conflict.error";
 import { NotFoundError } from "../../errors/not-found.error";
 import { ValidationError } from "../../errors/validation.error";
+import {
+  isForeignKeyViolation,
+  isUniqueViolation,
+} from "../../utils/db-errors";
 import { assertPollReadable } from "../polls/poll-access";
 import type { PollRepository } from "../polls/poll.repository";
 import type { QuestionRepository } from "./question.repository";
@@ -9,24 +13,6 @@ import type {
   UpdateQuestionInput,
 } from "./question.schema";
 import type { PublicQuestion } from "./question.types";
-
-function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
-
-function isForeignKeyViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23503"
-  );
-}
 
 export class QuestionService {
   constructor(

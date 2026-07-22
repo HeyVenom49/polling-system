@@ -20,7 +20,10 @@ export class PollController {
       throw new UnauthorizedError();
     }
 
-    const data = await this.service.createPoll(req.user.id, req.body);
+    const data = await this.service.createPoll(
+      { id: req.user.id, plan: req.user.plan },
+      req.body,
+    );
 
     return sendSuccess(res, {
       statusCode: 201,

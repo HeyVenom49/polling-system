@@ -142,9 +142,10 @@ export class AuthController {
       throw new UnauthorizedError();
     }
 
+    const data = await this.service.getMe(req.user);
     return sendSuccess(res, {
       message: "Current user fetched successfully",
-      data: req.user,
+      data,
     });
   }
 }

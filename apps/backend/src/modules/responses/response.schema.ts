@@ -1,18 +1,5 @@
 import { z } from "zod";
 
-const answerItemSchema = z
-  .object({
-    questionId: z.uuid(),
-    optionId: z.uuid(),
-  })
-  .strict();
-
-export const submitResponseSchema = z
-  .object({
-    answers: z.array(answerItemSchema).min(1),
-  })
-  .strict();
-
 export const responsePollParamsSchema = z
   .object({
     pollId: z.uuid(),
@@ -26,4 +13,7 @@ export const responseResourceParamsSchema = z
   })
   .strict();
 
-export type SubmitResponseInput = z.infer<typeof submitResponseSchema>;
+export {
+  submitResponseSchema,
+  type SubmitResponseInput,
+} from "@polling-system/shared";

@@ -10,6 +10,7 @@ const publicUserSelect = {
   username: users.username,
   email: users.email,
   role: users.role,
+  plan: users.plan,
   isEmailVerified: users.isEmailVerified,
   createdAt: users.createdAt,
 } as const;

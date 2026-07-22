@@ -1,6 +1,6 @@
 import type { Redis } from "ioredis";
 import type { RequestHandler } from "express";
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { RedisStore, type RedisReply } from "rate-limit-redis";
 import { env } from "../config/env";
 import { sendFailure } from "../utils/response";
@@ -22,7 +22,7 @@ function createRedisRateLimiter(
     standardHeaders: "draft-7",
     legacyHeaders: false,
     skip: () => env.NODE_ENV === "test",
-    keyGenerator: (req) => req.ip ?? "unknown",
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? "127.0.0.1"),
     store: new RedisStore({
       prefix,
       sendCommand: (command: string, ...args: string[]) =>

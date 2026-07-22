@@ -29,6 +29,7 @@ import { AuthLockoutRepository } from "./modules/auth/auth-lockout.repository";
 import { createAuthRouter } from "./modules/auth/auth.routes";
 import { AuthService } from "./modules/auth/auth.service";
 import { PollController } from "./modules/polls/poll.controller";
+import { PollQuotaRepository } from "./modules/polls/poll-quota.repository";
 import { PollRepository } from "./modules/polls/poll.repository";
 import { createPollRouter } from "./modules/polls/poll.routes";
 import { PollService } from "./modules/polls/poll.services";
@@ -77,6 +78,7 @@ export function createContainer(): AppContainer {
   const authSessionRepository = new AuthSessionRepository(cache);
   const authTokenRepository = new AuthTokenRepository(cache);
   const authLockoutRepository = new AuthLockoutRepository(cache);
+  const pollQuotaRepository = new PollQuotaRepository(cache);
   const mailService = new MailService();
   const authService = new AuthService(
     authRepository,
@@ -84,6 +86,7 @@ export function createContainer(): AppContainer {
     authTokenRepository,
     authLockoutRepository,
     mailService,
+    pollQuotaRepository,
   );
   const authController = new AuthController(authService);
   const authenticate = createAuthenticate(authRepository);
@@ -127,6 +130,7 @@ export function createContainer(): AppContainer {
     optionRepository,
     pollRealtime,
     resultService,
+    pollQuotaRepository,
   );
   const pollController = new PollController(pollService);
 

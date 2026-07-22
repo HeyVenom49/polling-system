@@ -22,6 +22,17 @@ export class RedisCache implements Cache {
     return count;
   }
 
+  async decrement(key: string): Promise<number> {
+    const count = await this.client.decr(key);
+
+    if (count < 0) {
+      await this.client.set(key, "0");
+      return 0;
+    }
+
+    return count;
+  }
+
   async setIfAbsent(
     key: string,
     value: string,

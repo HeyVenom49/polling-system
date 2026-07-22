@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { UserPlan } from "@polling-system/shared";
 import type { CreatePollInput } from "./poll.schema";
 import type {
   PaginatedPolls,
@@ -7,6 +8,7 @@ import type {
   UpdatePollData,
 } from "./poll.types";
 import type { PollRepository } from "./poll.repository";
+import type { PollQuotaRepository } from "./poll-quota.repository";
 import { ConflictError } from "../../errors/conflict.error";
 import { NotFoundError } from "../../errors/not-found.error";
 import type { PollRealtime } from "../../infrastructure/socket/poll-realtime";
@@ -14,15 +16,7 @@ import type { OptionRepository } from "../options/option.repository";
 import type { QuestionRepository } from "../questions/question.repository";
 import type { ResultService } from "../results/result.service";
 import { assertPollReadable } from "./poll-access";
-
-function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
+import { isUniqueViolation } from "../../utils/db-errors";
 
 export class PollService {
   constructor(
@@ -31,15 +25,18 @@ export class PollService {
     private readonly optionRepository: OptionRepository,
     private readonly pollRealtime: PollRealtime,
     private readonly resultService: ResultService,
+    private readonly quotaRepository: PollQuotaRepository,
   ) {}
 
   async createPoll(
-    creatorId: string,
+    creator: { id: string; plan: UserPlan },
     input: CreatePollInput,
   ): Promise<PublicPoll> {
+    await this.quotaRepository.reserveCreate(creator.id, creator.plan);
+
     const data = {
       ...input,
-      creatorId,
+      creatorId: creator.id,
       shareId: randomUUID(),
     };
 
@@ -53,12 +50,14 @@ export class PollService {
             shareId: randomUUID(),
           });
         } catch (retryError) {
+          await this.quotaRepository.releaseCreate(creator.id, creator.plan);
           if (isUniqueViolation(retryError)) {
             throw new ConflictError("Unable to create poll share link");
           }
           throw retryError;
         }
       }
+      await this.quotaRepository.releaseCreate(creator.id, creator.plan);
       throw error;
     }
   }

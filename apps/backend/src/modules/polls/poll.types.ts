@@ -15,6 +15,7 @@ export type PublicPoll = Pick<
   | "expireAt"
   | "status"
   | "resultPublished"
+  | "themeId"
   | "shareId"
   | "createdAt"
   | "updatedAt"
@@ -34,6 +35,7 @@ export type UpdatePollData = Partial<
     | "requireAuthentication"
     | "status"
     | "resultPublished"
+    | "themeId"
   >
 >;
 

@@ -73,11 +73,9 @@ export function createAuthRouter({
     controller.changePassword.bind(controller),
   );
 
-  authRouter.post(
-    "/refresh",
-    authRateLimiter,
-    controller.refresh.bind(controller),
-  );
+  // Refresh is session maintenance, not credential guessing — do not share
+  // the strict auth limiter (that was logging users out after ~15m idle).
+  authRouter.post("/refresh", controller.refresh.bind(controller));
   authRouter.post("/logout", controller.logout.bind(controller));
   authRouter.get("/me", authenticate, controller.me.bind(controller));
 

@@ -44,6 +44,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@polling-system/shared": "workspace:*",
     "@socket.io/redis-adapter": "^8.3.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",

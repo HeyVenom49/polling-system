@@ -1,5 +1,10 @@
 import { ConflictError } from "../../errors/conflict.error";
 import { NotFoundError } from "../../errors/not-found.error";
+import {
+  getPostgresConstraint,
+  isForeignKeyViolation,
+  isUniqueViolation,
+} from "../../utils/db-errors";
 import { assertPollReadable } from "../polls/poll-access";
 import type { PollRepository } from "../polls/poll.repository";
 import type { QuestionRepository } from "../questions/question.repository";
@@ -7,31 +12,8 @@ import type { OptionRepository } from "./option.repository";
 import type { CreateOptionInput, UpdateOptionInput } from "./option.schema";
 import type { PublicOption } from "./option.types";
 
-function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
-
-function isForeignKeyViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23503"
-  );
-}
-
 function getUniqueViolationMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "constraint" in error &&
-    error.constraint === "options_question_id_value_unique"
-  ) {
+  if (getPostgresConstraint(error) === "options_question_id_value_unique") {
     return "An option with this value already exists for this question";
   }
   return "An option with this display order already exists for this question";

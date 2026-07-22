@@ -3,6 +3,7 @@ import { NotFoundError } from "../../errors/not-found.error";
 import { UnauthorizedError } from "../../errors/unauthorized.error";
 import { ValidationError } from "../../errors/validation.error";
 import type { PollRealtime } from "../../infrastructure/socket/poll-realtime";
+import { isUniqueViolation } from "../../utils/db-errors";
 import type { OptionRepository } from "../options/option.repository";
 import type { PollRepository } from "../polls/poll.repository";
 import type { PublicPoll } from "../polls/poll.types";
@@ -15,15 +16,6 @@ import type {
   PublicAnswer,
   PublicResponse,
 } from "./response.types";
-
-function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
 
 export class ResponseService {
   constructor(

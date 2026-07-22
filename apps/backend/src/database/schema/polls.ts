@@ -12,6 +12,15 @@ import { users } from "./users";
 
 export const pollStatusEnum = pgEnum("poll_status", ["open", "closed"]);
 
+export const pollThemeEnum = pgEnum("poll_theme", [
+  "ocean",
+  "sunset",
+  "midnight",
+  "paper",
+  "berry",
+  "meadow",
+]);
+
 export const polls = pgTable(
   "polls",
   {
@@ -30,6 +39,7 @@ export const polls = pgTable(
     expireAt: timestamp("expire_at"),
     status: pollStatusEnum("status").notNull().default("open"),
     resultPublished: boolean("result_published").notNull().default(false),
+    themeId: pollThemeEnum("theme_id").notNull().default("ocean"),
     shareId: text("share_id").notNull().unique(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

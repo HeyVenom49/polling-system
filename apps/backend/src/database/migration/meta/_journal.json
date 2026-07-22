@@ -43,6 +43,13 @@
       "when": 1784562496953,
       "tag": "0005_same_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784712321920,
+      "tag": "0006_narrow_stick",
+      "breakpoints": true
     }
   ]
 }

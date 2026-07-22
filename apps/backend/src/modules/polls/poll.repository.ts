@@ -12,6 +12,7 @@ const publicPollSelect = {
   expireAt: polls.expireAt,
   status: polls.status,
   resultPublished: polls.resultPublished,
+  themeId: polls.themeId,
   shareId: polls.shareId,
   createdAt: polls.createdAt,
   updatedAt: polls.updatedAt,

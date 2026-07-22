@@ -13,10 +13,12 @@ import {
   verifyRefreshToken,
   type RefreshTokenPayload,
 } from "../../utils/jwt.ts";
+import type { PlanUsage } from "@polling-system/shared";
 import type { AuthLockoutRepository } from "./auth-lockout.repository";
 import type { AuthRepository } from "./auth.repository";
 import type { AuthSessionRepository } from "./auth-session.repository";
 import type { AuthTokenRepository } from "./auth-token.repository";
+import type { PollQuotaRepository } from "../polls/poll-quota.repository";
 import type {
   ChangePasswordInput,
   ForgotPasswordInput,
@@ -27,21 +29,15 @@ import type {
   VerifyEmailInput,
 } from "./auth.schema";
 import type { AuthResult, PublicUser, TokenPair } from "./auth.types";
+import { isUniqueViolation } from "../../utils/db-errors";
+
+export type MePayload = PublicUser & PlanUsage;
 
 const DUMMY_PASSWORD_HASH =
   "$2b$12$9YdMfxwTYQtlWoLb2XwXPul4gWRVO6ymcJePFsL/lO7i1sV0lmWI.";
 
 const GENERIC_EMAIL_SENT_MESSAGE =
   "If an account exists for that email, we sent instructions.";
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
 
 export class AuthService {
   constructor(
@@ -50,7 +46,13 @@ export class AuthService {
     private readonly tokenRepository: AuthTokenRepository,
     private readonly lockoutRepository: AuthLockoutRepository,
     private readonly mailService: MailService,
+    private readonly quotaRepository: PollQuotaRepository,
   ) {}
+
+  async getMe(user: PublicUser): Promise<MePayload> {
+    const usage = await this.quotaRepository.getUsage(user.id, user.plan);
+    return { ...user, ...usage };
+  }
 
   async register(data: RegisterInput): Promise<PublicUser> {
     const [existingEmail, existingUsername] = await Promise.all([
