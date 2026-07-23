@@ -30,6 +30,14 @@ type ServerToClientEvents = {
   resultsUpdated: (payload: PollResults) => void;
   pollUpdated: (payload: Poll) => void;
   pollDeleted: (payload: PollDeletedPayload) => void;
+  quizQuestionOpened: (payload: Poll) => void;
+  quizQuestionClosed: (payload: Poll) => void;
+  quizFinished: (payload: Poll) => void;
+  quizAnswerReceived: (payload: {
+    pollId: string;
+    questionId: string;
+    totalAnswers: number;
+  }) => void;
 };
 
 type PollSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -41,6 +49,7 @@ type UsePollSocketOptions = {
   onResponseSubmitted?: (payload: ResponseSubmittedPayload) => void;
   onPollUpdated?: (poll: Poll) => void;
   onPollDeleted?: () => void;
+  onQuizChanged?: (poll: Poll) => void;
 };
 
 export function usePollSocket({
@@ -50,6 +59,7 @@ export function usePollSocket({
   onResponseSubmitted,
   onPollUpdated,
   onPollDeleted,
+  onQuizChanged,
 }: UsePollSocketOptions) {
   const [connected, setConnected] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -59,12 +69,14 @@ export function usePollSocket({
   const onResponseSubmittedRef = useRef(onResponseSubmitted);
   const onPollUpdatedRef = useRef(onPollUpdated);
   const onPollDeletedRef = useRef(onPollDeleted);
+  const onQuizChangedRef = useRef(onQuizChanged);
 
   useEffect(() => {
     onResultsUpdatedRef.current = onResultsUpdated;
     onResponseSubmittedRef.current = onResponseSubmitted;
     onPollUpdatedRef.current = onPollUpdated;
     onPollDeletedRef.current = onPollDeleted;
+    onQuizChangedRef.current = onQuizChanged;
   });
 
   useEffect(() => {
@@ -115,12 +127,20 @@ export function usePollSocket({
     const handlePollUpdated = (poll: Poll) => {
       if (poll.id === pollId) {
         onPollUpdatedRef.current?.(poll);
+        onQuizChangedRef.current?.(poll);
       }
     };
 
     const handlePollDeleted = (payload: PollDeletedPayload) => {
       if (payload.pollId === pollId) {
         onPollDeletedRef.current?.();
+      }
+    };
+
+    const handleQuizEvent = (poll: Poll) => {
+      if (poll.id === pollId) {
+        onPollUpdatedRef.current?.(poll);
+        onQuizChangedRef.current?.(poll);
       }
     };
 
@@ -132,6 +152,9 @@ export function usePollSocket({
     socket.on("responseSubmitted", handleSubmitted);
     socket.on("pollUpdated", handlePollUpdated);
     socket.on("pollDeleted", handlePollDeleted);
+    socket.on("quizQuestionOpened", handleQuizEvent);
+    socket.on("quizQuestionClosed", handleQuizEvent);
+    socket.on("quizFinished", handleQuizEvent);
 
     return () => {
       socket.emit("leavePoll", { pollId });
@@ -143,6 +166,9 @@ export function usePollSocket({
       socket.off("responseSubmitted", handleSubmitted);
       socket.off("pollUpdated", handlePollUpdated);
       socket.off("pollDeleted", handlePollDeleted);
+      socket.off("quizQuestionOpened", handleQuizEvent);
+      socket.off("quizQuestionClosed", handleQuizEvent);
+      socket.off("quizFinished", handleQuizEvent);
       socket.disconnect();
       setConnected(false);
       setJoined(false);

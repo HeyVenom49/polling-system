@@ -5,7 +5,13 @@ type OptionRecord = typeof options.$inferSelect;
 
 export type PublicOption = Pick<
   OptionRecord,
-  "id" | "questionId" | "value" | "displayOrder" | "createdAt" | "updatedAt"
+  | "id"
+  | "questionId"
+  | "value"
+  | "displayOrder"
+  | "isCorrect"
+  | "createdAt"
+  | "updatedAt"
 >;
 
 export type CreateOptionData = CreateOptionInput & { questionId: string };

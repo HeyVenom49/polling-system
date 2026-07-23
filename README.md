@@ -45,30 +45,51 @@ cp apps/backend/.env.example apps/backend/.env
 Fill both files with local values. JWT secrets must each be at least 32
 characters and different. Set `SMTP_USER` / `SMTP_PASS` for email delivery.
 
-### 3. Start PostgreSQL and Redis
+### 3. Start with Docker Compose (full stack)
+
+Root `.env` only needs Postgres/Redis (you may already have this).  
+Backend still uses `apps/backend/.env`; frontend Vite defaults match `apps/frontend/.env.example`.
 
 ```bash
-docker compose up -d
+# Root: POSTGRES_* + REDIS_PORT (see .env.example)
+# Apps:
+cp apps/backend/.env.example apps/backend/.env   # if missing
+cp apps/frontend/.env.example apps/frontend/.env # if missing
+
+docker compose up --build -d
 ```
 
-### 4. Apply database migrations
+Compose overrides `DATABASE_URL` / `REDIS_URL` for the backend container so it talks to the `postgres` and `redis` services (your backend `.env` can keep `localhost` for `bun run dev`).
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API + Socket.IO | http://localhost:3000 |
+| Postgres | localhost:5432 |
+| Redis | localhost:6379 |
+
+The backend container runs migrations on startup. App images are built from
+`apps/backend/Dockerfile` and `apps/frontend/Dockerfile`.
+
+### 4. Local development (apps outside Docker)
+
+Keep only infra in Docker if you prefer hot reload:
 
 ```bash
-cd apps/backend
-bun run db:migrate
+docker compose up -d postgres redis
 ```
 
-### 5. Start the applications
+Then:
 
 ```bash
-cd apps/backend && bun run dev
+cd apps/backend && bun run db:migrate && bun run dev
 ```
 
 ```bash
 cd apps/frontend && bun run dev
 ```
 
-Backend default port is from `PORT` (often `3000` or `4000`). Vite uses `5173`.
+Point `apps/backend/.env` `DATABASE_URL` / `REDIS_URL` at `localhost`.
 
 ## Authentication API
 
@@ -124,7 +145,9 @@ Mounted at `/api/v1/admin` (role `admin` required).
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/polls` | List all polls (`limit`, `offset`) |
+| `GET` | `/users?q=` | Search users by email or username |
 | `PATCH` | `/users/:id/role` | Set user role (`user` \| `creator` \| `admin`) |
+| `PATCH` | `/users/:id/plan` | Set user plan (`free` \| `pro`) |
 
 Admins can also update/delete any poll and view unpublished results/analytics.
 
@@ -162,12 +185,19 @@ bun run db:generate
 - Polls, questions, options, responses (guest cookie), results + creator analytics
 - Public poll form endpoint
 - Public-read rules, list pagination, question reorder
-- Admin role: list polls, set user roles, manage any poll
+- Admin role: list/search users, list polls, set roles, manage any poll
 - Results/form option loading without N+1 queries
 - Socket.IO + Redis adapter with live poll events and join ACL
+- Creator-only unpublished `resultsUpdated` via `poll:{id}:creators` room
+
+### Completed (frontend)
+
+- Auth, dashboard, create/manage polls, take-poll + live results
+- Creator insights, pricing page, settings profile, admin UI
+- Share QR, pagination, empty states / 404, theme polish
 
 ### Remaining
 
-- Frontend UI (auth + take-poll + live results)
 - Automated tests, CI, production deployment config
 - Optional: switch SMTP to Resend when a domain is available
+- Optional: Pro billing when ready

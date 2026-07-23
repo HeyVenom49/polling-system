@@ -51,6 +51,10 @@ import { ResultRepository } from "./modules/results/result.repository";
 import { ResultService } from "./modules/results/result.service";
 import { ResultController } from "./modules/results/result.controller";
 import { createResultRouter } from "./modules/results/result.routes";
+import { QuizRepository } from "./modules/quiz/quiz.repository";
+import { QuizService } from "./modules/quiz/quiz.service";
+import { QuizController } from "./modules/quiz/quiz.controller";
+import { createQuizRouter } from "./modules/quiz/quiz.routes";
 import { AdminService } from "./modules/admin/admin.service";
 import { AdminController } from "./modules/admin/admin.controller";
 import { createAdminRouter } from "./modules/admin/admin.routes";
@@ -145,10 +149,26 @@ export function createContainer(): AppContainer {
   );
   const responseController = new ResponseController(responseService);
 
+  const quizRepository = new QuizRepository(postgres.db);
+  const quizService = new QuizService(
+    quizRepository,
+    pollRepository,
+    questionRepository,
+    optionRepository,
+    responseRepository,
+    pollRealtime,
+  );
+  const quizController = new QuizController(quizService);
+
   const authRouter = createAuthRouter({
     controller: authController,
     authenticate,
     authRateLimiter: createAuthRateLimiter(redis.client),
+  });
+  const quizRouter = createQuizRouter({
+    controller: quizController,
+    authenticate,
+    optionalAuthenticate,
   });
   const pollRouter = createPollRouter({
     controller: pollController,
@@ -187,6 +207,7 @@ export function createContainer(): AppContainer {
   const v1Router = createV1Router({
     authRouter,
     pollRouter,
+    quizRouter,
     questionRouter,
     optionRouter,
     responseRouter,

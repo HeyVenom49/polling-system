@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { UserPlan } from "@polling-system/shared";
+import {
+  canRequirePollAuthentication,
+  canUsePollExpiry,
+  canUsePollTheme,
+  type UserPlan,
+} from "@polling-system/shared";
 import type { CreatePollInput } from "./poll.schema";
 import type {
   PaginatedPolls,
@@ -10,6 +15,7 @@ import type {
 import type { PollRepository } from "./poll.repository";
 import type { PollQuotaRepository } from "./poll-quota.repository";
 import { ConflictError } from "../../errors/conflict.error";
+import { ForbiddenError } from "../../errors/forbidden.error";
 import { NotFoundError } from "../../errors/not-found.error";
 import type { PollRealtime } from "../../infrastructure/socket/poll-realtime";
 import type { OptionRepository } from "../options/option.repository";
@@ -17,6 +23,44 @@ import type { QuestionRepository } from "../questions/question.repository";
 import type { ResultService } from "../results/result.service";
 import { assertPollReadable } from "./poll-access";
 import { isUniqueViolation } from "../../utils/db-errors";
+
+function assertProPollFeatures(
+  plan: UserPlan,
+  input: {
+    themeId?: string;
+    expireAt?: Date | null;
+    requireAuthentication?: boolean;
+  },
+  options?: { isAdmin?: boolean },
+): void {
+  if (options?.isAdmin) {
+    return;
+  }
+
+  if (input.themeId !== undefined && !canUsePollTheme(input.themeId, plan)) {
+    throw new ForbiddenError(
+      "That theme is available on Pro. Upgrade to unlock it.",
+    );
+  }
+
+  if (
+    input.expireAt != null &&
+    !canUsePollExpiry(plan)
+  ) {
+    throw new ForbiddenError(
+      "Poll expiration is a Pro feature. Upgrade to set an expiry.",
+    );
+  }
+
+  if (
+    input.requireAuthentication === true &&
+    !canRequirePollAuthentication(plan)
+  ) {
+    throw new ForbiddenError(
+      "Requiring sign-in is a Pro feature. Upgrade to enable it.",
+    );
+  }
+}
 
 export class PollService {
   constructor(
@@ -32,12 +76,26 @@ export class PollService {
     creator: { id: string; plan: UserPlan },
     input: CreatePollInput,
   ): Promise<PublicPoll> {
+    assertProPollFeatures(creator.plan, {
+      themeId: input.themeId,
+      expireAt: input.expireAt,
+      requireAuthentication:
+        input.mode === "quiz" ? false : input.requireAuthentication,
+    });
+
     await this.quotaRepository.reserveCreate(creator.id, creator.plan);
 
     const data = {
       ...input,
       creatorId: creator.id,
       shareId: randomUUID(),
+      ...(input.mode === "quiz"
+        ? {
+            requireAuthentication: true,
+            quizStatus: "lobby" as const,
+            status: "open" as const,
+          }
+        : {}),
     };
 
     try {
@@ -144,7 +202,7 @@ export class PollService {
 
   async updatePoll(
     id: string,
-    actor: { id: string; role: string },
+    actor: { id: string; role: string; plan: UserPlan },
     data: UpdatePollData,
   ): Promise<PublicPoll> {
     const existing = await this.repository.findById(id);
@@ -159,6 +217,8 @@ export class PollService {
     if (!isOwner && !isAdmin) {
       throw new NotFoundError("Poll not found");
     }
+
+    assertProPollFeatures(actor.plan, data, { isAdmin });
 
     const poll = await this.repository.updatePoll(
       id,

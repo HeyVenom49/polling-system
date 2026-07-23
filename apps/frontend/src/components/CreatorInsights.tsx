@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PollResultsPanel } from "@/components/PollResultsPanel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/features/auth/form-utils";
 import type { Poll } from "@/features/polls/poll-api";
 import {
@@ -29,19 +30,6 @@ export function CreatorInsights({ poll }: CreatorInsightsProps) {
     queryFn: () => getPollResults(poll.id),
   });
 
-  async function refreshCreatorData() {
-    // Drop socket snapshot so fresh HTTP data can paint.
-    setLiveResults(null);
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: ["poll", poll.id, "analytics"],
-      }),
-      queryClient.invalidateQueries({
-        queryKey: ["poll", poll.id, "results"],
-      }),
-    ]);
-  }
-
   usePollSocket({
     pollId: poll.id,
     enabled: true,
@@ -55,9 +43,9 @@ export function CreatorInsights({ poll }: CreatorInsightsProps) {
     },
     onResponseSubmitted: (payload) => {
       setTotalResponses(payload.totalResponses);
-      // Backend only broadcasts full results when published.
-      // Creators always refetch so bars update without a page refresh.
-      void refreshCreatorData();
+      void queryClient.invalidateQueries({
+        queryKey: ["poll", poll.id, "analytics"],
+      });
     },
   });
 
@@ -81,7 +69,11 @@ export function CreatorInsights({ poll }: CreatorInsightsProps) {
       </div>
 
       {analyticsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading analytics…</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-20 rounded-lg" />
+        </div>
       ) : null}
 
       {analyticsQuery.isError ? (
@@ -138,7 +130,7 @@ export function CreatorInsights({ poll }: CreatorInsightsProps) {
           />
         </div>
       ) : resultsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading results…</p>
+        <Skeleton className="h-32 w-full rounded-lg" />
       ) : (
         <p className="text-sm text-muted-foreground">No responses yet.</p>
       )}

@@ -108,7 +108,7 @@ export class PollController {
 
     const data = await this.service.updatePoll(
       req.params.id,
-      { id: req.user.id, role: req.user.role },
+      { id: req.user.id, role: req.user.role, plan: req.user.plan },
       req.body,
     );
 

@@ -78,6 +78,9 @@ export class OptionService {
     await this.assertQuestionInPoll(questionId, pollId);
 
     try {
+      if (input.isCorrect) {
+        await this.repository.clearCorrectForQuestion(questionId);
+      }
       return await this.repository.createOption({ ...input, questionId });
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -132,6 +135,9 @@ export class OptionService {
     await this.assertQuestionInPoll(questionId, pollId);
 
     try {
+      if (data.isCorrect === true) {
+        await this.repository.clearCorrectForQuestion(questionId, id);
+      }
       const option = await this.repository.updateOption(id, questionId, data);
       if (!option) {
         throw new NotFoundError("Option not found");

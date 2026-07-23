@@ -1,73 +1,205 @@
 import { Link } from "react-router";
 import { BRAND_NAME, FREE_DAILY_POLL_LIMIT } from "@polling-system/shared";
+import { PollPreview } from "@/components/landing/PollPreview";
 import { BrandMark } from "@/components/BrandMark";
 import { PageShell, Parallax, Reveal } from "@/components/motion";
+import { PricingTiers } from "@/components/PricingTiers";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const steps = [
+  {
+    step: "01",
+    title: "Create",
+    body: "Build a live quiz or an open poll. Mark correct answers for quizzes, pick a theme, and share when you’re ready.",
+  },
+  {
+    step: "02",
+    title: "Share",
+    body: "Send a link or QR. Open polls can take guest votes; live quizzes ask users to sign in so each person answers once.",
+  },
+  {
+    step: "03",
+    title: "Run live",
+    body: "For quizzes, reveal one question at a time with a timer and a leaderboard. Open polls stream results as votes land.",
+  },
+];
 
 const features = [
   {
-    title: "Build in minutes",
-    body: "Create multi-question polls with ordered options and share a single link.",
+    title: "Live quizzes",
+    body: "Host-controlled questions, countdown timers, and a scoreboard of who got it right.",
+  },
+  {
+    title: "Open polls",
+    body: "Share a link for guest-friendly voting when you don’t need accounts or scoring.",
   },
   {
     title: "Live results",
-    body: "Watch responses roll in over Socket.IO the moment people vote.",
+    body: "Bars and totals update the moment someone responds — publish when you’re ready to show the room.",
   },
   {
     title: "Theme presets",
-    body: "Pick Ocean, Sunset, Midnight, and more so every poll matches the moment.",
+    body: "Ocean, Sunset, Midnight, and more so every session matches the room you’re in.",
+  },
+  {
+    title: "Creator insights",
+    body: "See response splits, recent activity, and day-by-day trends on the manage page.",
+  },
+];
+
+const audiences = [
+  {
+    title: "Meetings & workshops",
+    body: "Pulse-check a room without breaking the flow. Share a link, get a read in minutes.",
+  },
+  {
+    title: "Classrooms",
+    body: "Run timed live quizzes. Users sign in once, answer once per question, and see the leaderboard.",
+  },
+  {
+    title: "Communities",
+    body: "Run decisions in Discord, Slack, or email with a poll that actually feels alive.",
   },
 ];
 
 export function LandingPage() {
   return (
     <PageShell>
-      <section className="relative mx-auto flex min-h-[78vh] w-full max-w-6xl flex-col justify-center gap-8 overflow-hidden px-6 pb-24 pt-12">
-        <Parallax intensity={28} className="pointer-events-none absolute inset-x-0 top-10 -z-10 h-64 opacity-70">
-          <div className="mx-auto h-full max-w-3xl rounded-full bg-[radial-gradient(circle_at_center,var(--atmosphere-a),transparent_70%)] blur-2xl" />
-        </Parallax>
-
-        <Reveal>
-          <BrandMark size="lg" />
-        </Reveal>
-
-        <Reveal delayMs={80}>
-          <div className="max-w-2xl space-y-6">
-            <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-6xl md:leading-[1.05]">
-              Polls that feel live.
-            </h1>
-            <p className="max-w-xl text-lg text-muted-foreground md:text-xl">
-              {BRAND_NAME} — create, share, and watch results update in real
-              time. Free includes {FREE_DAILY_POLL_LIMIT} new polls every day.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild variant="brand" size="lg" className="interactive-press h-11 px-5 text-base">
-                <Link to="/register">Start free</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="interactive-press h-11 px-5 text-base">
-                <a href="#pricing">See pricing</a>
-              </Button>
+      {/* Hero — brand, one line, one CTA group, full-bleed visual plane */}
+      <section className="relative isolate min-h-[min(100dvh,920px)] overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_85%_20%,var(--atmosphere-a),transparent_55%),radial-gradient(ellipse_60%_50%_at_10%_90%,var(--atmosphere-b),transparent_50%)]" />
+          <Parallax
+            intensity={36}
+            className="absolute inset-y-0 right-0 hidden w-[55%] lg:block"
+          >
+            <div className="flex h-full items-center justify-center pr-8 xl:pr-16">
+              <PollPreview
+                ambient
+                className="w-full max-w-md scale-110 opacity-80 blur-[0.5px]"
+              />
             </div>
-          </div>
-        </Reveal>
+          </Parallax>
+          <div className="absolute inset-y-0 right-0 hidden w-[45%] bg-gradient-to-l from-transparent via-background/20 to-background lg:block" />
+        </div>
+
+        <div className="relative mx-auto flex min-h-[min(100dvh,920px)] w-full max-w-6xl flex-col justify-center px-6 pb-24 pt-16">
+          <Reveal>
+            <BrandMark size="lg" />
+          </Reveal>
+
+          <Reveal delayMs={90}>
+            <div className="mt-8 max-w-xl space-y-6 lg:max-w-2xl">
+              <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-6xl md:leading-[1.05]">
+                Polls that feel live.
+              </h1>
+              <p className="max-w-lg text-lg text-muted-foreground md:text-xl">
+                Live quizzes for the room, open polls for quick votes — free for{" "}
+                {FREE_DAILY_POLL_LIMIT} new creates every day.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  asChild
+                  variant="brand"
+                  size="lg"
+                  className="interactive-press h-11 px-5 text-base"
+                >
+                  <Link to="/register">Start free</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="interactive-press h-11 px-5 text-base"
+                >
+                  <a href="#how-it-works">See how it works</a>
+                </Button>
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal delayMs={160} className="mt-14 lg:hidden">
+            <PollPreview />
+          </Reveal>
+        </div>
       </section>
 
-      <section id="features" className="border-y border-border/50 bg-card/40 py-24">
+      <section id="how-it-works" className="border-t border-border/50 py-24">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
             <h2 className="font-display text-3xl font-semibold md:text-4xl">
-              Features
+              How it works
+            </h2>
+            <p className="mt-3 max-w-xl text-muted-foreground">
+              Three steps from blank page to a room full of live answers.
+            </p>
+          </Reveal>
+          <ol className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+            {steps.map((item, index) => (
+              <Reveal key={item.step} delayMs={index * 90}>
+                <li>
+                  <p className="font-display text-sm font-semibold tracking-[0.18em] text-brand">
+                    {item.step}
+                  </p>
+                  <h3 className="mt-3 font-display text-2xl font-semibold">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 text-muted-foreground">{item.body}</p>
+                </li>
+              </Reveal>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section
+        id="preview"
+        className="border-y border-border/50 bg-card/40 py-24"
+      >
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-2 lg:gap-16">
+          <Reveal>
+            <div>
+              <h2 className="font-display text-3xl font-semibold md:text-4xl">
+                Results that move with the room
+              </h2>
+              <p className="mt-4 max-w-md text-muted-foreground">
+                {BRAND_NAME} pushes updates the instant a vote lands. You see
+                the truth while people are still answering — then publish when
+                you want the crowd to see it too.
+              </p>
+              <Button
+                asChild
+                variant="brand"
+                className="mt-8 interactive-press"
+              >
+                <Link to="/register">Try it free</Link>
+              </Button>
+            </div>
+          </Reveal>
+          <Reveal delayMs={120}>
+            <PollPreview className="interactive-press" />
+          </Reveal>
+        </div>
+      </section>
+
+      <section id="features" className="py-24">
+        <div className="mx-auto max-w-6xl px-6">
+          <Reveal>
+            <h2 className="font-display text-3xl font-semibold md:text-4xl">
+              Built for real sessions
             </h2>
             <p className="mt-3 max-w-xl text-muted-foreground">
               Everything you need to run a poll end to end — no design file
               required.
             </p>
           </Reveal>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
+          <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => (
-              <Reveal key={feature.title} delayMs={index * 90}>
-                <div className="interactive-press rounded-2xl border border-transparent p-1 hover:border-border/60 hover:bg-card/60">
+              <Reveal key={feature.title} delayMs={Math.min(index * 70, 280)}>
+                <div>
                   <h3 className="font-display text-xl font-semibold">
                     {feature.title}
                   </h3>
@@ -79,62 +211,73 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="pricing" className="py-24">
+      <section id="use-cases" className="border-t border-border/50 py-24">
+        <div className="mx-auto max-w-6xl px-6">
+          <Reveal>
+            <h2 className="font-display text-3xl font-semibold md:text-4xl">
+              Made for rooms that decide together
+            </h2>
+            <p className="mt-3 max-w-xl text-muted-foreground">
+              Same product, different moments — keep the energy, skip the
+              spreadsheet.
+            </p>
+          </Reveal>
+          <div className="mt-14 grid gap-10 md:grid-cols-3">
+            {audiences.map((item, index) => (
+              <Reveal key={item.title} delayMs={index * 90}>
+                <div>
+                  <h3 className="font-display text-xl font-semibold">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 text-muted-foreground">{item.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" className="border-t border-border/50 bg-card/40 py-24">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
             <h2 className="font-display text-3xl font-semibold md:text-4xl">
               Pricing
             </h2>
-            <p className="mt-3 text-muted-foreground">
-              Start free. Upgrade when you outgrow the daily create limit.
+            <p className="mt-3 max-w-2xl text-muted-foreground">
+              Clear options for individuals and teams. Start free, upgrade when
+              you need more, or talk to us for Business.
             </p>
           </Reveal>
-          <div className="mt-12 grid gap-6 md:grid-cols-2">
-            <Reveal delayMs={60}>
-              <Card className="interactive-press border-border/70 bg-card/90 shadow-none">
-                <CardHeader>
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Free
-                  </p>
-                  <CardTitle className="font-display text-4xl font-bold">
-                    $0
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <ul className="space-y-2 text-muted-foreground">
-                    <li>{FREE_DAILY_POLL_LIMIT} poll creates per day (UTC)</li>
-                    <li>Live results & theme presets</li>
-                    <li>Guest and authenticated voting</li>
-                  </ul>
-                  <Button asChild className="interactive-press">
-                    <Link to="/register">Create account</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </Reveal>
-            <Reveal delayMs={140}>
-              <Card className="interactive-press border-[color-mix(in_srgb,var(--brand)_45%,var(--border))] bg-card/90 shadow-none">
-                <CardHeader>
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Pro
-                  </p>
-                  <CardTitle className="font-display text-4xl font-bold">
-                    Coming soon
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <ul className="space-y-2 text-muted-foreground">
-                    <li>Unlimited poll creates</li>
-                    <li>Advanced analytics</li>
-                    <li>Priority support</li>
-                  </ul>
-                  <Button type="button" variant="outline" disabled>
-                    Notify me later
-                  </Button>
-                </CardContent>
-              </Card>
-            </Reveal>
-          </div>
+          <Reveal delayMs={80}>
+            <div className="mt-12">
+              <PricingTiers context="marketing" />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden py-28">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_80%_at_50%_120%,var(--atmosphere-a),transparent_60%)]"
+        />
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <Reveal>
+            <p className="font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl">
+              {BRAND_NAME}
+            </p>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Build the quiz. Share the link. Watch the room answer.
+            </p>
+            <Button
+              asChild
+              variant="brand"
+              size="lg"
+              className="mt-8 interactive-press h-11 px-6 text-base"
+            >
+              <Link to="/register">Start free</Link>
+            </Button>
+          </Reveal>
         </div>
       </section>
     </PageShell>

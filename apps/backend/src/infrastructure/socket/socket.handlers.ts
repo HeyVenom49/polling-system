@@ -4,9 +4,13 @@ import { verifyAccessToken } from "../../utils/jwt";
 import type { AuthRepository } from "../../modules/auth/auth.repository";
 import type { PollRepository } from "../../modules/polls/poll.repository";
 import { assertPollReadable } from "../../modules/polls/poll-access";
-import { pollRoom } from "./rooms";
+import { pollCreatorRoom, pollRoom } from "./rooms";
 import { SocketClientEvents, SocketServerEvents } from "./socket.events";
 import type { SocketServer } from "./socket";
+
+function isAdminRole(role: string | undefined): boolean {
+  return role === "admin";
+}
 
 const pollIdPayloadSchema = z
   .object({
@@ -82,6 +86,14 @@ export function registerSocketHandlers(
         }
 
         void socket.join(pollRoom(pollId));
+
+        if (
+          socket.data.userId === poll.creatorId ||
+          isAdminRole(socket.data.userRole)
+        ) {
+          void socket.join(pollCreatorRoom(pollId));
+        }
+
         socket.emit(SocketServerEvents.joinedPoll, { pollId });
       })();
     });
@@ -96,6 +108,7 @@ export function registerSocketHandlers(
 
       const { pollId } = parsed.data;
       void socket.leave(pollRoom(pollId));
+      void socket.leave(pollCreatorRoom(pollId));
       socket.emit(SocketServerEvents.leftPoll, { pollId });
     });
   });

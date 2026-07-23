@@ -1,10 +1,12 @@
-import type { LucideIcon } from "lucide-react";
+import { Suspense } from "react";
 import {
   LayoutDashboard,
   LogOut,
   PlusCircle,
   Settings,
   Shield,
+  Tags,
+  type LucideIcon,
 } from "lucide-react";
 import { NavLink, Outlet, Navigate } from "react-router";
 import { BrandMark } from "@/components/BrandMark";
@@ -26,6 +28,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { to: "/app", label: "Polls", icon: LayoutDashboard, end: true },
   { to: "/app/polls/new", label: "Create", icon: PlusCircle },
+  { to: "/app/pricing", label: "Pricing", icon: Tags },
   { to: "/app/settings", label: "Settings", icon: Settings },
   { to: "/app/admin", label: "Admin", icon: Shield, adminOnly: true },
 ];
@@ -180,7 +183,19 @@ export function AppLayout() {
       </aside>
 
       <div className="min-w-0 px-4 py-6 md:px-8 md:py-8">
-        <Outlet />
+        <Suspense
+          fallback={
+            <div
+              className="grid min-h-[40vh] place-items-center text-sm text-muted-foreground"
+              aria-busy="true"
+              aria-live="polite"
+            >
+              Loading…
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </div>
     </div>
   );

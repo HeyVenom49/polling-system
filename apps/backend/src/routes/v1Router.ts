@@ -3,6 +3,7 @@ import { Router } from "express";
 export type V1RouterDeps = {
   authRouter: Router;
   pollRouter: Router;
+  quizRouter: Router;
   questionRouter: Router;
   optionRouter: Router;
   responseRouter: Router;
@@ -13,6 +14,7 @@ export type V1RouterDeps = {
 export function createV1Router({
   authRouter,
   pollRouter,
+  quizRouter,
   questionRouter,
   optionRouter,
   responseRouter,
@@ -27,6 +29,7 @@ export function createV1Router({
   router.use("/polls/:pollId/questions", questionRouter);
   router.use("/polls/:pollId/responses", responseRouter);
   router.use("/polls/:pollId/results", resultRouter);
+  router.use("/polls", quizRouter);
   router.use("/polls", pollRouter);
 
   return router;

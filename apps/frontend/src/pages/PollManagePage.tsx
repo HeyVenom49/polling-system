@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import {
-  POLL_THEMES,
-  POLL_THEME_IDS,
+  canRequirePollAuthentication,
+  canUsePollExpiry,
   type PollThemeId,
   type UpdatePollInput,
 } from "@polling-system/shared";
@@ -15,6 +15,11 @@ import {
   primaryButtonClassName,
 } from "@/components/Field";
 import { CreatorInsights } from "@/components/CreatorInsights";
+import { QuizHostPanel } from "@/components/QuizHostPanel";
+import { ShareQr } from "@/components/ShareQr";
+import { ProFeatureGate, ThemePicker } from "@/components/ThemePicker";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/features/auth/AuthContext";
 import { getErrorMessage } from "@/features/auth/form-utils";
 import {
   createOption,
@@ -119,14 +124,22 @@ export function PollManagePage() {
   }
 
   if (pollQuery.isLoading) {
-    return <p className="text-[var(--color-muted)]">Loading poll…</p>;
+    return (
+      <div className="mx-auto max-w-3xl space-y-4">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-56 w-full rounded-xl" />
+      </div>
+    );
   }
 
   if (pollQuery.isError || !pollQuery.data) {
     return (
-      <div className="space-y-3">
-        <p className="text-[var(--color-danger)]" role="alert">
-          {getErrorMessage(pollQuery.error, "Poll not found")}
+      <div className="space-y-3 rounded-xl border border-dashed border-border px-6 py-10">
+        <p className="font-display text-xl font-semibold">Poll not found</p>
+        <p className="text-sm text-muted-foreground" role="alert">
+          {getErrorMessage(pollQuery.error, "This poll may have been deleted.")}
         </p>
         <Link to="/app" className="text-sm underline">
           Back to dashboard
@@ -136,6 +149,7 @@ export function PollManagePage() {
   }
 
   const poll = pollQuery.data;
+  const shareUrl = sharePollUrl(poll.shareId);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -148,7 +162,7 @@ export function PollManagePage() {
             ← Dashboard
           </Link>
           <h1 className="mt-2 font-display text-3xl font-semibold">
-            Manage poll
+            {poll.mode === "quiz" ? "Manage live quiz" : "Manage poll"}
           </h1>
           <p className="mt-1 text-sm text-[var(--color-muted)]">{poll.title}</p>
         </div>
@@ -161,12 +175,12 @@ export function PollManagePage() {
             {copied ? "Copied" : "Copy link"}
           </button>
           <a
-            href={sharePollUrl(poll.shareId)}
+            href={shareUrl}
             target="_blank"
             rel="noreferrer"
             className="rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-sm font-medium text-white"
           >
-            Open form
+            {poll.mode === "quiz" ? "Open user view" : "Open form"}
           </a>
         </div>
       </div>
@@ -177,23 +191,57 @@ export function PollManagePage() {
         </p>
       ) : null}
 
+      <section className="flex flex-wrap items-center gap-6 rounded-xl border border-border bg-card/90 p-5">
+        <ShareQr url={shareUrl} />
+        <div className="min-w-0 flex-1 space-y-2">
+          <h2 className="font-display text-lg font-semibold">Share</h2>
+          <p className="text-sm text-muted-foreground">
+            {poll.mode === "quiz"
+              ? "Project the QR so users can join the lobby, then start questions from the live controls below."
+              : "Scan the QR or copy the link so people can vote on any device."}
+          </p>
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            {shareUrl}
+          </p>
+        </div>
+      </section>
+
       <PollMetaSection
         poll={poll}
         onSaved={() => void invalidatePoll()}
         onError={setPageError}
       />
 
-      <CreatorInsights poll={poll} />
+      {poll.mode === "quiz" ? (
+        <QuizHostPanel
+          pollId={pollId}
+          questions={questionsQuery.data ?? []}
+        />
+      ) : (
+        <CreatorInsights poll={poll} />
+      )}
 
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-2xl font-semibold">Questions</h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">
-              Add questions and at least two options each before sharing. Use
-              up/down to reorder.
+              {poll.mode === "quiz"
+                ? "Add questions, mark the correct option on each, then start the live session."
+                : "Add questions and at least two options each before sharing. Use up/down to reorder."}
             </p>
           </div>
+          <button
+            type="button"
+            disabled
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground opacity-70"
+            title="Coming soon"
+          >
+            Generate with AI
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+              Coming soon
+            </span>
+          </button>
         </div>
 
         <AddQuestionForm
@@ -204,7 +252,10 @@ export function PollManagePage() {
         />
 
         {questionsQuery.isLoading ? (
-          <p className="text-[var(--color-muted)]">Loading questions…</p>
+          <div className="space-y-3">
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
+          </div>
         ) : null}
 
         {questionsQuery.isError ? (
@@ -213,10 +264,10 @@ export function PollManagePage() {
           </p>
         ) : null}
 
-        {questionsQuery.data?.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-sm text-[var(--color-muted)]">
+        {questionsQuery.data && questionsQuery.data.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
             No questions yet. Add your first question above.
-          </p>
+          </div>
         ) : null}
 
         <ul className="space-y-4">
@@ -227,6 +278,7 @@ export function PollManagePage() {
               question={question}
               index={index}
               total={questionsQuery.data.length}
+              isQuiz={poll.mode === "quiz"}
               onMove={(direction) => void moveQuestion(question.id, direction)}
               onChanged={() => void invalidateQuestions()}
               onError={setPageError}
@@ -280,11 +332,14 @@ function PollMetaSection({
   onSaved: () => void;
   onError: (message: string | null) => void;
 }) {
+  const { user } = useAuth();
+  const plan = user?.plan;
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { isSubmitting, isDirty },
   } = useForm<PollMetaForm>({
     values: {
@@ -303,15 +358,28 @@ function PollMetaSection({
   async function onSubmit(values: PollMetaForm) {
     onError(null);
     setSaveMessage(null);
-    const expireAt = fromDatetimeLocalValue(values.expireAt);
+
+    const expireAt = canUsePollExpiry(plan)
+      ? fromDatetimeLocalValue(values.expireAt)
+      : poll.expireAt
+        ? new Date(poll.expireAt)
+        : null;
+
+    const requireAuthentication =
+      poll.mode === "quiz"
+        ? true
+        : canRequirePollAuthentication(plan)
+          ? values.requireAuthentication
+          : poll.requireAuthentication;
+
     const input: UpdatePollInput = {
       title: values.title,
       description: values.description.trim() || null,
-      requireAuthentication: values.requireAuthentication,
+      requireAuthentication,
       themeId: values.themeId,
       status: values.status,
       resultPublished: values.resultPublished,
-      expireAt,
+      expireAt: canUsePollExpiry(plan) ? expireAt : undefined,
     };
 
     try {
@@ -353,24 +421,36 @@ function PollMetaSection({
         />
       </Field>
 
-      <Field
-        id="poll-expireAt"
-        label="Expires at"
-        hint="Clear the field and save to remove expiration."
-      >
+      <ProFeatureGate plan={plan} label="Expires at">
         <input
           id="poll-expireAt"
           type="datetime-local"
           className={inputClassName}
+          disabled={!canUsePollExpiry(plan)}
           {...register("expireAt")}
         />
-      </Field>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Clear the field and save to remove expiration.
+        </p>
+      </ProFeatureGate>
 
       <div className="flex flex-wrap gap-4 text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" {...register("requireAuthentication")} />
-          Require sign-in to vote
-        </label>
+        {poll.mode === "quiz" ? (
+          <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground">
+            Live quizzes always require users to sign in.
+          </p>
+        ) : (
+          <ProFeatureGate plan={plan} label="Voter access">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                disabled={!canRequirePollAuthentication(plan)}
+                {...register("requireAuthentication")}
+              />
+              Require sign-in to vote
+            </label>
+          </ProFeatureGate>
+        )}
         <label className="flex items-center gap-2">
           <input type="checkbox" {...register("resultPublished")} />
           Publish results
@@ -387,37 +467,13 @@ function PollMetaSection({
         </label>
       </div>
 
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Theme</legend>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {POLL_THEME_IDS.map((id) => {
-            const theme = POLL_THEMES[id];
-            const selected = themeId === id;
-            return (
-              <label
-                key={id}
-                className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${
-                  selected
-                    ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/30"
-                    : "border-[var(--color-border)]"
-                }`}
-                style={{
-                  background: theme.cssVars["--poll-bg"],
-                  color: theme.cssVars["--poll-text"],
-                }}
-              >
-                <input
-                  type="radio"
-                  value={id}
-                  className="sr-only"
-                  {...register("themeId")}
-                />
-                {theme.label}
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
+      <ThemePicker
+        value={themeId}
+        plan={plan}
+        onChange={(id) =>
+          setValue("themeId", id, { shouldDirty: true, shouldTouch: true })
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <button
@@ -514,6 +570,7 @@ function QuestionCard({
   question,
   index,
   total,
+  isQuiz = false,
   onMove,
   onChanged,
   onError,
@@ -522,6 +579,7 @@ function QuestionCard({
   question: Question;
   index: number;
   total: number;
+  isQuiz?: boolean;
   onMove: (direction: -1 | 1) => void;
   onChanged: () => void;
   onError: (message: string | null) => void;
@@ -638,6 +696,7 @@ function QuestionCard({
         questionId={question.id}
         options={optionsQuery.data ?? []}
         isLoading={optionsQuery.isLoading}
+        isQuiz={isQuiz}
         onChanged={() => void invalidateOptions()}
         onError={onError}
       />
@@ -650,6 +709,7 @@ function OptionsEditor({
   questionId,
   options,
   isLoading,
+  isQuiz = false,
   onChanged,
   onError,
 }: {
@@ -657,6 +717,7 @@ function OptionsEditor({
   questionId: string;
   options: Option[];
   isLoading: boolean;
+  isQuiz?: boolean;
   onChanged: () => void;
   onError: (message: string | null) => void;
 }) {
@@ -671,6 +732,7 @@ function OptionsEditor({
       await createOption(pollId, questionId, {
         value: newValue.trim(),
         displayOrder: options.length,
+        isCorrect: isQuiz && options.length === 0,
       });
       setNewValue("");
       onChanged();
@@ -693,6 +755,16 @@ function OptionsEditor({
     }
   }
 
+  async function markCorrect(option: Option) {
+    onError(null);
+    try {
+      await updateOption(pollId, questionId, option.id, { isCorrect: true });
+      onChanged();
+    } catch (error) {
+      onError(getErrorMessage(error, "Could not mark correct option"));
+    }
+  }
+
   async function removeOption(option: Option) {
     onError(null);
     try {
@@ -705,7 +777,9 @@ function OptionsEditor({
 
   return (
     <div className="space-y-3 border-t border-[var(--color-border)]/70 pt-4">
-      <h3 className="text-sm font-medium">Options</h3>
+      <h3 className="text-sm font-medium">
+        Options{isQuiz ? " · mark the correct answer" : ""}
+      </h3>
       {isLoading ? (
         <p className="text-sm text-[var(--color-muted)]">Loading options…</p>
       ) : null}
@@ -714,7 +788,9 @@ function OptionsEditor({
           <OptionRow
             key={option.id}
             option={option}
+            isQuiz={isQuiz}
             onRename={(value) => void renameOption(option, value)}
+            onMarkCorrect={() => void markCorrect(option)}
             onRemove={() => void removeOption(option)}
           />
         ))}
@@ -722,6 +798,11 @@ function OptionsEditor({
       {options.length < 2 ? (
         <p className="text-xs text-[var(--color-muted)]">
           Add at least two options so voters can choose.
+        </p>
+      ) : null}
+      {isQuiz && options.length >= 2 && !options.some((o) => o.isCorrect) ? (
+        <p className="text-xs text-[var(--color-danger)]">
+          Mark one option as correct before starting this question live.
         </p>
       ) : null}
       <form className="flex flex-wrap gap-2" onSubmit={(e) => void addOption(e)}>
@@ -747,17 +828,34 @@ function OptionsEditor({
 
 function OptionRow({
   option,
+  isQuiz,
   onRename,
+  onMarkCorrect,
   onRemove,
 }: {
   option: Option;
+  isQuiz: boolean;
   onRename: (value: string) => void;
+  onMarkCorrect: () => void;
   onRemove: () => void;
 }) {
   const [value, setValue] = useState(option.value);
 
   return (
     <li className="flex flex-wrap items-center gap-2">
+      {isQuiz ? (
+        <button
+          type="button"
+          className={`rounded-full border px-2 py-1 text-xs ${
+            option.isCorrect
+              ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+              : "border-[var(--color-border)] text-[var(--color-muted)]"
+          }`}
+          onClick={onMarkCorrect}
+        >
+          {option.isCorrect ? "Correct" : "Set correct"}
+        </button>
+      ) : null}
       <input
         className={`${inputClassName} max-w-sm flex-1`}
         value={value}

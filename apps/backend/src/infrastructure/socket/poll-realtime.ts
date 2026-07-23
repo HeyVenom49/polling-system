@@ -1,6 +1,6 @@
 import type { PublicPoll } from "../../modules/polls/poll.types";
 import type { PollResults } from "../../modules/results/result.types";
-import { pollRoom } from "./rooms";
+import { pollCreatorRoom, pollRoom } from "./rooms";
 import {
   SocketServerEvents,
   type PollDeletedPayload,
@@ -28,6 +28,13 @@ export class PollRealtime {
       .emit(SocketServerEvents.resultsUpdated, results);
   }
 
+  /** Unpublished results — creator/admin sockets only. */
+  resultsUpdatedForCreators(results: PollResults): void {
+    this.io
+      ?.to(pollCreatorRoom(results.pollId))
+      .emit(SocketServerEvents.resultsUpdated, results);
+  }
+
   pollUpdated(poll: PublicPoll): void {
     this.io?.to(pollRoom(poll.id)).emit(SocketServerEvents.pollUpdated, poll);
   }
@@ -37,5 +44,31 @@ export class PollRealtime {
     this.io
       ?.to(pollRoom(pollId))
       .emit(SocketServerEvents.pollDeleted, payload);
+  }
+
+  quizQuestionOpened(poll: PublicPoll): void {
+    this.io
+      ?.to(pollRoom(poll.id))
+      .emit(SocketServerEvents.quizQuestionOpened, poll);
+  }
+
+  quizQuestionClosed(poll: PublicPoll): void {
+    this.io
+      ?.to(pollRoom(poll.id))
+      .emit(SocketServerEvents.quizQuestionClosed, poll);
+  }
+
+  quizFinished(poll: PublicPoll): void {
+    this.io?.to(pollRoom(poll.id)).emit(SocketServerEvents.quizFinished, poll);
+  }
+
+  quizAnswerReceived(
+    pollId: string,
+    payload: { questionId: string; totalAnswers: number },
+  ): void {
+    this.io?.to(pollRoom(pollId)).emit(SocketServerEvents.quizAnswerReceived, {
+      pollId,
+      ...payload,
+    });
   }
 }

@@ -12,6 +12,11 @@ export type PublicPoll = Pick<
   | "description"
   | "creatorId"
   | "requireAuthentication"
+  | "mode"
+  | "quizStatus"
+  | "currentQuestionId"
+  | "questionEndsAt"
+  | "questionDurationSec"
   | "expireAt"
   | "status"
   | "resultPublished"
@@ -24,6 +29,8 @@ export type PublicPoll = Pick<
 export type CreatePollData = CreatePollInput & {
   creatorId: string;
   shareId: string;
+  quizStatus?: PollRecord["quizStatus"];
+  requireAuthentication?: boolean;
 };
 
 export type UpdatePollData = Partial<
@@ -33,9 +40,13 @@ export type UpdatePollData = Partial<
     | "description"
     | "expireAt"
     | "requireAuthentication"
+    | "questionDurationSec"
     | "status"
     | "resultPublished"
     | "themeId"
+    | "quizStatus"
+    | "currentQuestionId"
+    | "questionEndsAt"
   >
 >;
 

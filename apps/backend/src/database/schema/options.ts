@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -23,6 +24,7 @@ export const options = pgTable(
       }),
     value: varchar("value", { length: 255 }).notNull(),
     displayOrder: integer("display_order").notNull(),
+    isCorrect: boolean("is_correct").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

@@ -7,7 +7,9 @@ import {
 import type { AdminController } from "./admin.controller";
 import {
   adminListPollsQuerySchema,
+  adminSearchUsersQuerySchema,
   adminUserParamsSchema,
+  updateUserPlanSchema,
   updateUserRoleSchema,
 } from "./admin.schema";
 
@@ -32,11 +34,24 @@ export function createAdminRouter({
     controller.listPolls.bind(controller),
   );
 
+  router.get(
+    "/users",
+    validateQuery(adminSearchUsersQuerySchema),
+    controller.searchUsers.bind(controller),
+  );
+
   router.patch(
     "/users/:id/role",
     validateParams(adminUserParamsSchema),
     validateBody(updateUserRoleSchema),
     controller.updateUserRole.bind(controller),
+  );
+
+  router.patch(
+    "/users/:id/plan",
+    validateParams(adminUserParamsSchema),
+    validateBody(updateUserPlanSchema),
+    controller.updateUserPlan.bind(controller),
   );
 
   return router;

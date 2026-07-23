@@ -59,10 +59,65 @@ export class ResponseRepository {
     return response ?? null;
   }
 
+  async findByPollAndUser(
+    pollId: string,
+    userId: string,
+  ): Promise<PublicResponse | null> {
+    const [response] = await this.db
+      .select(publicResponseSelect)
+      .from(responses)
+      .where(and(eq(responses.pollId, pollId), eq(responses.userId, userId)))
+      .limit(1);
+
+    return response ?? null;
+  }
+
+  async addAnswer(
+    responseId: string,
+    item: CreateAnswerData,
+  ): Promise<PublicAnswer> {
+    const [answer] = await this.db
+      .insert(answers)
+      .values({ ...item, responseId })
+      .returning(publicAnswerSelect);
+
+    if (!answer) {
+      throw new Error("Answer creation failed: no row returned");
+    }
+
+    return answer;
+  }
+
+  async findAnswerForQuestion(
+    responseId: string,
+    questionId: string,
+  ): Promise<PublicAnswer | null> {
+    const [answer] = await this.db
+      .select(publicAnswerSelect)
+      .from(answers)
+      .where(
+        and(
+          eq(answers.responseId, responseId),
+          eq(answers.questionId, questionId),
+        ),
+      )
+      .limit(1);
+
+    return answer ?? null;
+  }
+
   async findAnswersByResponseId(responseId: string): Promise<PublicAnswer[]> {
     return this.db
       .select(publicAnswerSelect)
       .from(answers)
       .where(eq(answers.responseId, responseId));
+  }
+
+  async deleteByPollId(pollId: string): Promise<number> {
+    const deleted = await this.db
+      .delete(responses)
+      .where(eq(responses.pollId, pollId))
+      .returning({ id: responses.id });
+    return deleted.length;
   }
 }

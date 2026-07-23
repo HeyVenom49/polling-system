@@ -4,5 +4,6 @@ export * from "./constants";
 export * from "./option.schemas";
 export * from "./poll.schemas";
 export * from "./question.schemas";
+export * from "./quiz.schemas";
 export * from "./response.schemas";
 export * from "./themes";

@@ -14,6 +14,10 @@ export const SocketServerEvents = {
   resultsUpdated: "resultsUpdated",
   pollUpdated: "pollUpdated",
   pollDeleted: "pollDeleted",
+  quizQuestionOpened: "quizQuestionOpened",
+  quizQuestionClosed: "quizQuestionClosed",
+  quizFinished: "quizFinished",
+  quizAnswerReceived: "quizAnswerReceived",
 } as const;
 
 export type SocketClientEvent =
@@ -39,6 +43,12 @@ export type PollDeletedPayload = {
   pollId: string;
 };
 
+export type QuizAnswerReceivedPayload = {
+  pollId: string;
+  questionId: string;
+  totalAnswers: number;
+};
+
 export type ClientToServerEvents = {
   [SocketClientEvents.joinPoll]: (payload: PollIdPayload) => void;
   [SocketClientEvents.leavePoll]: (payload: PollIdPayload) => void;
@@ -54,4 +64,10 @@ export type ServerToClientEvents = {
   [SocketServerEvents.resultsUpdated]: (payload: PollResults) => void;
   [SocketServerEvents.pollUpdated]: (payload: PublicPoll) => void;
   [SocketServerEvents.pollDeleted]: (payload: PollDeletedPayload) => void;
+  [SocketServerEvents.quizQuestionOpened]: (payload: PublicPoll) => void;
+  [SocketServerEvents.quizQuestionClosed]: (payload: PublicPoll) => void;
+  [SocketServerEvents.quizFinished]: (payload: PublicPoll) => void;
+  [SocketServerEvents.quizAnswerReceived]: (
+    payload: QuizAnswerReceivedPayload,
+  ) => void;
 };

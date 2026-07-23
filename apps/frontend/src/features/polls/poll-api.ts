@@ -12,6 +12,11 @@ export type Poll = {
   description: string | null;
   creatorId: string;
   requireAuthentication: boolean;
+  mode: "poll" | "quiz";
+  quizStatus: "lobby" | "question_open" | "question_closed" | "finished" | null;
+  currentQuestionId: string | null;
+  questionEndsAt: string | null;
+  questionDurationSec: number;
   expireAt: string | null;
   status: "open" | "closed";
   resultPublished: boolean;
@@ -43,6 +48,7 @@ export type Option = {
   questionId: string;
   value: string;
   displayOrder: number;
+  isCorrect: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -154,7 +160,7 @@ export async function listOptions(
 export async function createOption(
   pollId: string,
   questionId: string,
-  input: { value: string; displayOrder: number },
+  input: { value: string; displayOrder: number; isCorrect?: boolean },
 ): Promise<Option> {
   return apiRequest<Option>(
     `/polls/${pollId}/questions/${questionId}/options`,
@@ -170,7 +176,7 @@ export async function updateOption(
   pollId: string,
   questionId: string,
   optionId: string,
-  input: { value?: string; displayOrder?: number },
+  input: { value?: string; displayOrder?: number; isCorrect?: boolean },
 ): Promise<Option> {
   return apiRequest<Option>(
     `/polls/${pollId}/questions/${questionId}/options/${optionId}`,

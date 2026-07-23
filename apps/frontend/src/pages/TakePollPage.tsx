@@ -9,11 +9,13 @@ import {
 import { Link, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { POLL_THEMES } from "@polling-system/shared";
+import { LiveQuizStudent } from "@/components/LiveQuizStudent";
 import { PollResultsPanel } from "@/components/PollResultsPanel";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getErrorMessage } from "@/features/auth/form-utils";
 import type { Poll } from "@/features/polls/poll-api";
+import { getQuizStateByShareId } from "@/features/polls/quiz-api";
 import {
   getPollFormByShareId,
   getPollResults,
@@ -26,6 +28,54 @@ type AnswersMap = Record<string, string>;
 
 export function TakePollPage() {
   const { shareId = "" } = useParams();
+
+  const quizProbe = useQuery({
+    queryKey: ["quiz-state", shareId],
+    queryFn: () => getQuizStateByShareId(shareId),
+    enabled: Boolean(shareId),
+    retry: false,
+  });
+
+  if (quizProbe.isLoading) {
+    return (
+      <div className="grid min-h-dvh place-items-center text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+
+  if (quizProbe.data?.poll.mode === "quiz") {
+    return <LiveQuizStudent shareId={shareId} />;
+  }
+
+  const probeMessage =
+    quizProbe.error instanceof ApiError
+      ? quizProbe.error.message
+      : getErrorMessage(quizProbe.error, "");
+  const isClassicPoll = /not a live quiz/i.test(probeMessage);
+
+  if (quizProbe.isError && !isClassicPoll) {
+    return (
+      <div className="grid min-h-dvh place-items-center px-6">
+        <div className="max-w-md space-y-3 text-center">
+          <h1 className="font-display text-2xl font-semibold">
+            Unable to open link
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {probeMessage || "Something went wrong loading this poll."}
+          </p>
+          <Link to="/" className="text-sm text-brand underline">
+            Back home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <ClassicTakePoll shareId={shareId} />;
+}
+
+function ClassicTakePoll({ shareId }: { shareId: string }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
@@ -160,25 +210,64 @@ export function TakePollPage() {
   if (authLoading || formQuery.isLoading) {
     return (
       <Shell style={themeStyle}>
-        <p style={{ color: "var(--poll-muted)" }}>Loading poll…</p>
+        <div className="space-y-4 animate-pulse">
+          <div
+            className="h-4 w-24 rounded"
+            style={{ background: "var(--poll-muted)", opacity: 0.35 }}
+          />
+          <div
+            className="h-10 w-3/4 max-w-md rounded"
+            style={{ background: "var(--poll-muted)", opacity: 0.35 }}
+          />
+          <div
+            className="h-24 w-full rounded-xl"
+            style={{ background: "var(--poll-muted)", opacity: 0.2 }}
+          />
+          <div
+            className="h-24 w-full rounded-xl"
+            style={{ background: "var(--poll-muted)", opacity: 0.2 }}
+          />
+        </div>
       </Shell>
     );
   }
 
   if (formQuery.isError) {
     const error = formQuery.error;
+    const message = getErrorMessage(error, "This poll is unavailable.");
+    const lower = message.toLowerCase();
     const needsAuth =
       error instanceof ApiError &&
-      (error.status === 401 ||
-        error.message.toLowerCase().includes("authentication"));
+      (error.status === 401 || lower.includes("authentication"));
+    const isExpired = lower.includes("expired");
+    const isClosed = lower.includes("closed");
+    const isMissing =
+      (error instanceof ApiError && error.status === 404) ||
+      lower.includes("not found");
+
+    const title = needsAuth
+      ? "Sign in required"
+      : isExpired
+        ? "This poll has expired"
+        : isClosed
+          ? "This poll is closed"
+          : isMissing
+            ? "Poll not found"
+            : "Unable to open poll";
+
+    const detail = needsAuth
+      ? "The creator requires a signed-in account to vote."
+      : isExpired
+        ? "The response window has ended. You can no longer submit answers."
+        : isClosed
+          ? "The creator closed this poll. New responses are not accepted."
+          : message;
 
     return (
       <Shell style={themeStyle}>
-        <h1 className="font-display text-3xl font-semibold">
-          {needsAuth ? "Sign in required" : "Unable to open poll"}
-        </h1>
+        <h1 className="font-display text-3xl font-semibold">{title}</h1>
         <p className="mt-2" style={{ color: "var(--poll-muted)" }}>
-          {getErrorMessage(error, "This poll is unavailable.")}
+          {detail}
         </p>
         {needsAuth && !isAuthenticated ? (
           <Link
@@ -204,7 +293,10 @@ export function TakePollPage() {
     return null;
   }
 
-  const isClosed = activePoll.status !== "open";
+  const isExpired =
+    Boolean(activePoll.expireAt) &&
+    new Date(activePoll.expireAt as string).getTime() <= Date.now();
+  const isClosed = activePoll.status !== "open" || isExpired;
   const showForm = !submitted && !isClosed;
   const showResults = Boolean(results && activePoll.resultPublished);
 
@@ -229,12 +321,17 @@ export function TakePollPage() {
           </p>
         ) : null}
         {isClosed ? (
-          <p
-            className="text-sm font-medium"
-            style={{ color: "var(--poll-muted)" }}
+          <div
+            className="rounded-lg border px-3 py-2 text-sm"
+            style={{
+              borderColor: "color-mix(in srgb, var(--poll-muted) 35%, transparent)",
+              color: "var(--poll-muted)",
+            }}
           >
-            This poll is closed.
-          </p>
+            {isExpired
+              ? "This poll has expired. Voting is closed."
+              : "This poll is closed. Voting is no longer available."}
+          </div>
         ) : null}
       </header>
 

@@ -6,6 +6,7 @@ export const createOptionSchema = z
   .object({
     value: z.string().trim().min(1).max(255),
     displayOrder: displayOrderSchema,
+    isCorrect: z.boolean().optional().default(false),
   })
   .strict();
 
@@ -13,6 +14,7 @@ export const updateOptionSchema = z
   .object({
     value: z.string().trim().min(1).max(255).optional(),
     displayOrder: displayOrderSchema.optional(),
+    isCorrect: z.boolean().optional(),
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, {

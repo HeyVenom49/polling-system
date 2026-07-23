@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import type { Database } from "../../infrastructure/postgres/postgres-client";
 import { users, type NewUser } from "../../database/schema/index";
 import type { CredentialsUser, PublicUser } from "./auth.types";
@@ -184,5 +184,60 @@ export class AuthRepository {
       .returning(publicUserSelect);
 
     return user ?? null;
+  }
+
+  async updatePlan(
+    userId: string,
+    plan: NewUser["plan"],
+  ): Promise<PublicUser | null> {
+    const [user] = await this.db
+      .update(users)
+      .set({
+        plan,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(users.id, userId),
+          eq(users.isActive, true),
+          isNull(users.deletedAt),
+        ),
+      )
+      .returning(publicUserSelect);
+
+    return user ?? null;
+  }
+
+  async searchUsers(
+    query: string,
+    limit = 20,
+    offset = 0,
+  ): Promise<{ items: PublicUser[]; total: number }> {
+    const pattern = `%${query.trim().toLowerCase()}%`;
+    const active = and(eq(users.isActive, true), isNull(users.deletedAt));
+    const match = or(
+      ilike(users.email, pattern),
+      ilike(users.username, pattern),
+    );
+
+    const where = and(active, match);
+
+    const [countRow] = await this.db
+      .select({ total: sql<number>`cast(count(*) as int)` })
+      .from(users)
+      .where(where);
+
+    const items = await this.db
+      .select(publicUserSelect)
+      .from(users)
+      .where(where)
+      .orderBy(users.username)
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      items,
+      total: countRow?.total ?? 0,
+    };
   }
 }

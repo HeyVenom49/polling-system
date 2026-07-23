@@ -50,6 +50,27 @@
       "when": 1784712321920,
       "tag": "0006_narrow_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784743433513,
+      "tag": "0007_brown_clint_barton",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784820000000,
+      "tag": "0008_live_quiz",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784793793703,
+      "tag": "0009_calm_mentallo",
+      "breakpoints": true
     }
   ]
 }

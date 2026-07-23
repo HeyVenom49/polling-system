@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { POLL_STATUSES } from "./constants";
+import {
+  DEFAULT_QUIZ_DURATION_SECONDS,
+  POLL_MODES,
+  POLL_STATUSES,
+  QUIZ_DURATION_SECONDS,
+} from "./constants";
 import { DEFAULT_POLL_THEME_ID, POLL_THEME_IDS } from "./themes";
 
 export const pollThemeIdSchema = z.enum(POLL_THEME_IDS);
@@ -15,6 +20,16 @@ export const createPollSchema = z
       })
       .optional(),
     requireAuthentication: z.boolean().default(false),
+    mode: z.enum(POLL_MODES).default("poll"),
+    questionDurationSec: z
+      .number()
+      .int()
+      .refine(
+        (value): value is (typeof QUIZ_DURATION_SECONDS)[number] =>
+          (QUIZ_DURATION_SECONDS as readonly number[]).includes(value),
+        { message: "Invalid question duration" },
+      )
+      .default(DEFAULT_QUIZ_DURATION_SECONDS),
     themeId: pollThemeIdSchema.default(DEFAULT_POLL_THEME_ID),
   })
   .strict();
@@ -32,6 +47,15 @@ export const updatePollSchema = z
       ])
       .optional(),
     requireAuthentication: z.boolean().optional(),
+    questionDurationSec: z
+      .number()
+      .int()
+      .refine(
+        (value): value is (typeof QUIZ_DURATION_SECONDS)[number] =>
+          (QUIZ_DURATION_SECONDS as readonly number[]).includes(value),
+        { message: "Invalid question duration" },
+      )
+      .optional(),
     status: z.enum(POLL_STATUSES).optional(),
     resultPublished: z.boolean().optional(),
     themeId: pollThemeIdSchema.optional(),

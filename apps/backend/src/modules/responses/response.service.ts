@@ -119,9 +119,11 @@ export class ResponseService {
     const totalResponses = await this.resultService.getTotalResponses(pollId);
     this.pollRealtime.responseSubmitted(pollId, totalResponses);
 
+    const results = await this.resultService.buildPollResults(pollId);
     if (resultPublished) {
-      const results = await this.resultService.buildPollResults(pollId);
       this.pollRealtime.resultsUpdated(results);
+    } else {
+      this.pollRealtime.resultsUpdatedForCreators(results);
     }
   }
 
@@ -132,6 +134,12 @@ export class ResponseService {
     input: SubmitResponseInput,
   ): Promise<{ response: PublicResponse; answers: PublicAnswer[] }> {
     const poll = await this.assertPollAcceptsResponse(pollId);
+    if (poll.mode === "quiz") {
+      throw new ValidationError(
+        [],
+        "Use the live quiz answer endpoint for this poll",
+      );
+    }
     const identity = await this.resolveIdentity(poll, userId, guestId);
 
     await this.validateAnswers(pollId, input.answers);

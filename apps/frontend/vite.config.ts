@@ -13,4 +13,38 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  preview: {
+    host: true,
+    port: 5173,
+  },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "react-vendor",
+              test: /node_modules[\\/](react|react-dom|scheduler)([\\/]|$)/,
+            },
+            {
+              name: "router",
+              test: /node_modules[\\/]react-router([\\/]|$)/,
+            },
+            {
+              name: "query",
+              test: /node_modules[\\/]@tanstack[\\/]react-query([\\/]|$)/,
+            },
+            {
+              name: "socket",
+              test: /node_modules[\\/]socket\.io-client([\\/]|$)/,
+            },
+            {
+              name: "forms",
+              test: /node_modules[\\/](react-hook-form|@hookform[\\/]resolvers)([\\/]|$)/,
+            },
+          ],
+        },
+      },
+    },
+  },
 });
