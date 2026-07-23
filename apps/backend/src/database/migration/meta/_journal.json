@@ -64,13 +64,6 @@
       "when": 1784820000000,
       "tag": "0008_live_quiz",
       "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1784793793703,
-      "tag": "0009_calm_mentallo",
-      "breakpoints": true
     }
   ]
 }
