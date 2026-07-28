@@ -1,5 +1,5 @@
 import { and, eq, isNull, or } from "drizzle-orm";
-import { db } from "../../database/postgres";
+import type { Database } from "../../infrastructure/postgres/postgres-client";
 import { users, type NewUser } from "../../database/schema/index";
 import type { CredentialsUser, PublicUser } from "./auth.types";
 
@@ -15,8 +15,10 @@ const publicUserSelect = {
 } as const;
 
 export class AuthRepository {
+  constructor(private readonly db: Database) {}
+
   async existsByEmail(email: string): Promise<boolean> {
-    const [user] = await db
+    const [user] = await this.db
       .select({ id: users.id })
       .from(users)
       .where(eq(users.email, email))
@@ -26,7 +28,7 @@ export class AuthRepository {
   }
 
   async existsByUsername(username: string): Promise<boolean> {
-    const [user] = await db
+    const [user] = await this.db
       .select({ id: users.id })
       .from(users)
       .where(eq(users.username, username))
@@ -38,7 +40,7 @@ export class AuthRepository {
   async findCredentialsByIdentifier(
     identifier: string,
   ): Promise<CredentialsUser | null> {
-    const [user] = await db
+    const [user] = await this.db
       .select({
         ...publicUserSelect,
         passwordHash: users.passwordHash,
@@ -57,7 +59,7 @@ export class AuthRepository {
   }
 
   async findById(id: string): Promise<PublicUser | null> {
-    const [user] = await db
+    const [user] = await this.db
       .select(publicUserSelect)
       .from(users)
       .where(
@@ -73,7 +75,7 @@ export class AuthRepository {
   }
 
   async createUser(data: CreateUserInput): Promise<PublicUser> {
-    const [user] = await db
+    const [user] = await this.db
       .insert(users)
       .values(data)
       .returning(publicUserSelect);
@@ -85,5 +87,3 @@ export class AuthRepository {
     return user;
   }
 }
-
-export const authRepository = new AuthRepository();

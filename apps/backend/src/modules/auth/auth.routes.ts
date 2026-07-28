@@ -1,20 +1,34 @@
-import { Router } from "express";
-import { authenticate, validateBody } from "../../middleware/index.middleware";
+import { Router, type RequestHandler } from "express";
+import { validateBody } from "../../middleware/validate.middleware";
 import { loginSchema, registerSchema } from "./auth.schema";
-import { authController } from "./auth.controller";
+import type { AuthController } from "./auth.controller";
 
-const authRouter = Router();
+export type AuthRouterDeps = {
+  controller: AuthController;
+  authenticate: RequestHandler;
+};
 
-authRouter.post(
-  "/register",
-  validateBody(registerSchema),
-  authController.register,
-);
+export function createAuthRouter({
+  controller,
+  authenticate,
+}: AuthRouterDeps): Router {
+  const authRouter = Router();
 
-authRouter.post("/login", validateBody(loginSchema), authController.login);
+  authRouter.post(
+    "/register",
+    validateBody(registerSchema),
+    controller.register.bind(controller),
+  );
 
-authRouter.post("/refresh", authController.refresh);
-authRouter.post("/logout", authController.logout);
-authRouter.get("/me", authenticate, authController.me);
+  authRouter.post(
+    "/login",
+    validateBody(loginSchema),
+    controller.login.bind(controller),
+  );
 
-export default authRouter;
+  authRouter.post("/refresh", controller.refresh.bind(controller));
+  authRouter.post("/logout", controller.logout.bind(controller));
+  authRouter.get("/me", authenticate, controller.me.bind(controller));
+
+  return authRouter;
+}

@@ -1,8 +1,21 @@
 import { Router } from "express";
-import authRouter from "../modules/auth/auth.routes";
 
-const router = Router();
+export type V1RouterDeps = {
+  authRouter: Router;
+  pollRouter: Router;
+  questionRouter: Router;
+};
 
-router.use("/auth", authRouter);
+export function createV1Router({
+  authRouter,
+  pollRouter,
+  questionRouter,
+}: V1RouterDeps): Router {
+  const router = Router();
 
-export default router;
+  router.use("/auth", authRouter);
+  router.use("/polls/:pollId/questions", questionRouter);
+  router.use("/polls", pollRouter);
+
+  return router;
+}

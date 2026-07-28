@@ -1,4 +1,4 @@
-import { client } from "../../database/redis";
+import type { Cache } from "../../infrastructure/cache/cache";
 
 const REFRESH_SESSION_PREFIX = "auth:refresh:";
 
@@ -7,31 +7,29 @@ function sessionKey(jwtId: string): string {
 }
 
 export class AuthSessionRepository {
+  constructor(private readonly cache: Cache) {}
+
   async create(
     jwtId: string,
     userId: string,
     ttlSeconds: number,
   ): Promise<void> {
-    const result = await client.set(
+    const created = await this.cache.setIfAbsent(
       sessionKey(jwtId),
       userId,
-      "EX",
       ttlSeconds,
-      "NX",
     );
 
-    if (result !== "OK") {
+    if (!created) {
       throw new Error("Failed to create refresh session");
     }
   }
 
   async consume(jwtId: string): Promise<string | null> {
-    return client.getdel(sessionKey(jwtId));
+    return this.cache.consume(sessionKey(jwtId));
   }
 
   async delete(jwtId: string): Promise<void> {
-    await client.del(sessionKey(jwtId));
+    await this.cache.delete(sessionKey(jwtId));
   }
 }
-
-export const authSessionRepository = new AuthSessionRepository();
