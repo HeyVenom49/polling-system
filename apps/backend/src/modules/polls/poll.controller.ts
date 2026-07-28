@@ -1,6 +1,10 @@
 import type { Request, Response } from "express";
 
-import type { CreatePollInput, UpdatePollInput } from "./poll.schema";
+import type {
+  CreatePollInput,
+  ListPollsQuery,
+  UpdatePollInput,
+} from "./poll.schema";
 import type { PollService } from "./poll.services";
 import { UnauthorizedError } from "../../errors/unauthorized.error";
 import { sendSuccess } from "../../utils/response";
@@ -16,7 +20,10 @@ export class PollController {
       throw new UnauthorizedError();
     }
 
-    const data = await this.service.createPoll(req.user.id, req.body);
+    const data = await this.service.createPoll(
+      { id: req.user.id, plan: req.user.plan },
+      req.body,
+    );
 
     return sendSuccess(res, {
       statusCode: 201,
@@ -29,7 +36,11 @@ export class PollController {
     req: Request<{ id: string }>,
     res: Response,
   ): Promise<Response> {
-    const data = await this.service.getById(req.params.id);
+    const data = await this.service.getById(
+      req.params.id,
+      req.user?.id,
+      req.user?.role,
+    );
 
     return sendSuccess(res, {
       message: "Poll fetched successfully",
@@ -41,10 +52,30 @@ export class PollController {
     req: Request<{ shareId: string }>,
     res: Response,
   ): Promise<Response> {
-    const data = await this.service.getByShareId(req.params.shareId);
+    const data = await this.service.getByShareId(
+      req.params.shareId,
+      req.user?.id,
+      req.user?.role,
+    );
 
     return sendSuccess(res, {
       message: "Poll fetched successfully",
+      data,
+    });
+  }
+
+  async getFormByShareId(
+    req: Request<{ shareId: string }>,
+    res: Response,
+  ): Promise<Response> {
+    const data = await this.service.getFormByShareId(
+      req.params.shareId,
+      req.user?.id,
+      req.user?.role,
+    );
+
+    return sendSuccess(res, {
+      message: "Poll form fetched successfully",
       data,
     });
   }
@@ -54,10 +85,15 @@ export class PollController {
       throw new UnauthorizedError();
     }
 
-    const data = await this.service.listByCreator(req.user.id);
+    const query = req.query as unknown as ListPollsQuery;
+    const data = await this.service.listByCreator(
+      req.user.id,
+      query.limit,
+      query.offset,
+    );
 
     return sendSuccess(res, {
-      message: "Poll fetched successfully",
+      message: "Polls fetched successfully",
       data,
     });
   }
@@ -72,7 +108,7 @@ export class PollController {
 
     const data = await this.service.updatePoll(
       req.params.id,
-      req.user.id,
+      { id: req.user.id, role: req.user.role, plan: req.user.plan },
       req.body,
     );
 
@@ -90,7 +126,10 @@ export class PollController {
       throw new UnauthorizedError();
     }
 
-    await this.service.deletePoll(req.params.id, req.user.id);
+    await this.service.deletePoll(req.params.id, {
+      id: req.user.id,
+      role: req.user.role,
+    });
 
     return sendSuccess(res, {
       message: "Poll deleted successfully",

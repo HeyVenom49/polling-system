@@ -1,0 +1,174 @@
+import { ConflictError } from "../../errors/conflict.error";
+import { NotFoundError } from "../../errors/not-found.error";
+import {
+  getPostgresConstraint,
+  isForeignKeyViolation,
+  isUniqueViolation,
+} from "../../utils/db-errors";
+import { assertPollReadable } from "../polls/poll-access";
+import type { PollRepository } from "../polls/poll.repository";
+import type { QuestionRepository } from "../questions/question.repository";
+import type { OptionRepository } from "./option.repository";
+import type { CreateOptionInput, UpdateOptionInput } from "./option.schema";
+import type { PublicOption } from "./option.types";
+
+function getUniqueViolationMessage(error: unknown): string {
+  if (getPostgresConstraint(error) === "options_question_id_value_unique") {
+    return "An option with this value already exists for this question";
+  }
+  return "An option with this display order already exists for this question";
+}
+
+export class OptionService {
+  constructor(
+    private readonly repository: OptionRepository,
+    private readonly questionRepository: QuestionRepository,
+    private readonly pollRepository: PollRepository,
+  ) {}
+
+  private async assertPollOwnedBy(
+    pollId: string,
+    actorId: string,
+    actorRole?: string,
+  ): Promise<void> {
+    const poll = await this.pollRepository.findById(pollId);
+
+    if (!poll) {
+      throw new NotFoundError("Poll not found");
+    }
+
+    if (poll.creatorId !== actorId && actorRole !== "admin") {
+      throw new NotFoundError("Poll not found");
+    }
+  }
+
+  private async assertQuestionInPoll(
+    questionId: string,
+    pollId: string,
+  ): Promise<void> {
+    const question = await this.questionRepository.findById(questionId, pollId);
+
+    if (!question) {
+      throw new NotFoundError("Question not found");
+    }
+  }
+
+  private async assertPollReadableForViewer(
+    pollId: string,
+    viewerId?: string,
+    viewerRole?: string,
+  ): Promise<void> {
+    const poll = await this.pollRepository.findById(pollId);
+
+    if (!poll) {
+      throw new NotFoundError("Poll not found");
+    }
+
+    assertPollReadable(poll, viewerId, viewerRole);
+  }
+
+  async createOption(
+    pollId: string,
+    questionId: string,
+    actorId: string,
+    input: CreateOptionInput,
+    actorRole?: string,
+  ): Promise<PublicOption> {
+    await this.assertPollOwnedBy(pollId, actorId, actorRole);
+    await this.assertQuestionInPoll(questionId, pollId);
+
+    try {
+      if (input.isCorrect) {
+        await this.repository.clearCorrectForQuestion(questionId);
+      }
+      return await this.repository.createOption({ ...input, questionId });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictError(getUniqueViolationMessage(error));
+      }
+      if (isForeignKeyViolation(error)) {
+        throw new NotFoundError("Question not found");
+      }
+      throw error;
+    }
+  }
+
+  async getById(
+    id: string,
+    pollId: string,
+    questionId: string,
+    viewerId?: string,
+    viewerRole?: string,
+  ): Promise<PublicOption> {
+    await this.assertPollReadableForViewer(pollId, viewerId, viewerRole);
+    await this.assertQuestionInPoll(questionId, pollId);
+
+    const option = await this.repository.findById(id, questionId);
+
+    if (!option) {
+      throw new NotFoundError("Option not found");
+    }
+    return option;
+  }
+
+  async listByQuestionId(
+    pollId: string,
+    questionId: string,
+    viewerId?: string,
+    viewerRole?: string,
+  ): Promise<PublicOption[]> {
+    await this.assertPollReadableForViewer(pollId, viewerId, viewerRole);
+    await this.assertQuestionInPoll(questionId, pollId);
+
+    return this.repository.findByQuestionId(questionId);
+  }
+
+  async updateOption(
+    id: string,
+    pollId: string,
+    questionId: string,
+    actorId: string,
+    data: UpdateOptionInput,
+    actorRole?: string,
+  ): Promise<PublicOption> {
+    await this.assertPollOwnedBy(pollId, actorId, actorRole);
+    await this.assertQuestionInPoll(questionId, pollId);
+
+    try {
+      if (data.isCorrect === true) {
+        await this.repository.clearCorrectForQuestion(questionId, id);
+      }
+      const option = await this.repository.updateOption(id, questionId, data);
+      if (!option) {
+        throw new NotFoundError("Option not found");
+      }
+
+      return option;
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      if (isUniqueViolation(error)) {
+        throw new ConflictError(getUniqueViolationMessage(error));
+      }
+      throw error;
+    }
+  }
+
+  async deleteOption(
+    id: string,
+    pollId: string,
+    questionId: string,
+    actorId: string,
+    actorRole?: string,
+  ): Promise<void> {
+    await this.assertPollOwnedBy(pollId, actorId, actorRole);
+    await this.assertQuestionInPoll(questionId, pollId);
+
+    const deleted = await this.repository.deleteOption(id, questionId);
+
+    if (!deleted) {
+      throw new NotFoundError("Option not found");
+    }
+  }
+}

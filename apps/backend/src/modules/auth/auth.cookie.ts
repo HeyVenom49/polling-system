@@ -4,13 +4,18 @@ import { env } from "../../config/env";
 const REFRESH_COOKIE_NAME = "refreshToken";
 const REFRESH_COOKIE_PATH = "/api/v1/auth";
 
+/**
+ * Cross-origin deploys (e.g. Vercel FE + Render API) need SameSite=None; Secure.
+ * Same-site local/dev keeps Strict.
+ */
 function refreshCookieOptions(): CookieOptions {
+  const crossSite = env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: crossSite,
+    sameSite: crossSite ? "none" : "strict",
     path: REFRESH_COOKIE_PATH,
-    domain: env.COOKIE_DOMAIN,
+    ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
   };
 }
 

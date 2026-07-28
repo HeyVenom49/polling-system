@@ -36,6 +36,34 @@
       "when": 1784451469356,
       "tag": "0004_superb_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784562496953,
+      "tag": "0005_same_doctor_octopus",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784712321920,
+      "tag": "0006_narrow_stick",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784743433513,
+      "tag": "0007_brown_clint_barton",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784820000000,
+      "tag": "0008_live_quiz",
+      "breakpoints": true
     }
   ]
 }

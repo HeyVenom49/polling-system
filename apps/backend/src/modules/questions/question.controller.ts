@@ -22,6 +22,7 @@ export class QuestionController {
       req.params.pollId,
       req.user.id,
       req.body,
+      req.user.role,
     );
 
     return sendSuccess(res, {
@@ -35,7 +36,11 @@ export class QuestionController {
     req: Request<{ pollId: string }>,
     res: Response,
   ): Promise<Response> {
-    const data = await this.service.listByPollId(req.params.pollId);
+    const data = await this.service.listByPollId(
+      req.params.pollId,
+      req.user?.id,
+      req.user?.role,
+    );
 
     return sendSuccess(res, {
       message: "Questions fetched successfully",
@@ -47,7 +52,12 @@ export class QuestionController {
     req: Request<{ id: string; pollId: string }>,
     res: Response,
   ): Promise<Response> {
-    const data = await this.service.getById(req.params.id, req.params.pollId);
+    const data = await this.service.getById(
+      req.params.id,
+      req.params.pollId,
+      req.user?.id,
+      req.user?.role,
+    );
 
     return sendSuccess(res, {
       message: "Question fetched successfully",
@@ -68,6 +78,7 @@ export class QuestionController {
       req.params.pollId,
       req.user.id,
       req.body,
+      req.user.role,
     );
 
     return sendSuccess(res, {
@@ -88,10 +99,32 @@ export class QuestionController {
       req.params.id,
       req.params.pollId,
       req.user.id,
+      req.user.role,
     );
 
     return sendSuccess(res, {
       message: "Question deleted successfully",
+    });
+  }
+
+  async reorder(
+    req: Request<{ pollId: string }, unknown, { orderedIds: string[] }>,
+    res: Response,
+  ): Promise<Response> {
+    if (!req.user) {
+      throw new UnauthorizedError();
+    }
+
+    const data = await this.service.reorderQuestions(
+      req.params.pollId,
+      req.user.id,
+      req.body.orderedIds,
+      req.user.role,
+    );
+
+    return sendSuccess(res, {
+      message: "Questions reordered successfully",
+      data,
     });
   }
 }

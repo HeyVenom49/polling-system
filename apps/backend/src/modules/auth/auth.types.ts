@@ -4,7 +4,13 @@ type UserRecord = typeof users.$inferSelect;
 
 export type PublicUser = Pick<
   UserRecord,
-  "id" | "username" | "email" | "role" | "isEmailVerified" | "createdAt"
+  | "id"
+  | "username"
+  | "email"
+  | "role"
+  | "plan"
+  | "isEmailVerified"
+  | "createdAt"
 >;
 
 export type CredentialsUser = PublicUser & Pick<UserRecord, "passwordHash">;

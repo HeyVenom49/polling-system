@@ -1,0 +1,19 @@
+node_modules
+**/node_modules
+.git
+.husky
+**/.env
+**/.env.*
+!**/.env.example
+**/dist
+**/coverage
+**/.DS_Store
+# macOS AppleDouble sidecars (external volumes) break Docker builds
+._*
+**/._*
+**/.AppleDouble
+agent.md
+agent-transcripts
+*.md
+!README.md
+apps/frontend/bun.lock

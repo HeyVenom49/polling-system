@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Ballotly — local/production SPA
+Disallow: /app/
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password

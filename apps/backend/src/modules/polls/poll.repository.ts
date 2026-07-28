@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import type { Database } from "../../infrastructure/postgres/postgres-client";
 import { polls } from "../../database/schema";
 import type { CreatePollData, PublicPoll, UpdatePollData } from "./poll.types";
@@ -9,9 +9,15 @@ const publicPollSelect = {
   description: polls.description,
   creatorId: polls.creatorId,
   requireAuthentication: polls.requireAuthentication,
+  mode: polls.mode,
+  quizStatus: polls.quizStatus,
+  currentQuestionId: polls.currentQuestionId,
+  questionEndsAt: polls.questionEndsAt,
+  questionDurationSec: polls.questionDurationSec,
   expireAt: polls.expireAt,
   status: polls.status,
   resultPublished: polls.resultPublished,
+  themeId: polls.themeId,
   shareId: polls.shareId,
   createdAt: polls.createdAt,
   updatedAt: polls.updatedAt,
@@ -67,26 +73,59 @@ export class PollRepository {
       .offset(offset);
   }
 
+  async countByCreatorId(creatorId: string): Promise<number> {
+    const [row] = await this.db
+      .select({ value: count() })
+      .from(polls)
+      .where(eq(polls.creatorId, creatorId));
+
+    return Number(row?.value ?? 0);
+  }
+
   async updatePoll(
     id: string,
-    creatorId: string,
     data: UpdatePollData,
+    creatorId?: string,
   ): Promise<PublicPoll | null> {
+    const where =
+      creatorId === undefined
+        ? eq(polls.id, id)
+        : and(eq(polls.id, id), eq(polls.creatorId, creatorId));
+
     const [poll] = await this.db
       .update(polls)
       .set({ ...data, updatedAt: new Date() })
-      .where(and(eq(polls.id, id), eq(polls.creatorId, creatorId)))
+      .where(where)
       .returning(publicPollSelect);
 
     return poll ?? null;
   }
 
-  async deletePoll(id: string, creatorId: string): Promise<boolean> {
+  async deletePoll(id: string, creatorId?: string): Promise<boolean> {
+    const where =
+      creatorId === undefined
+        ? eq(polls.id, id)
+        : and(eq(polls.id, id), eq(polls.creatorId, creatorId));
+
     const deleted = await this.db
       .delete(polls)
-      .where(and(eq(polls.id, id), eq(polls.creatorId, creatorId)))
+      .where(where)
       .returning({ id: polls.id });
 
     return deleted.length > 0;
+  }
+
+  async findAll(limit = 20, offset = 0): Promise<PublicPoll[]> {
+    return this.db
+      .select(publicPollSelect)
+      .from(polls)
+      .orderBy(desc(polls.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async countAll(): Promise<number> {
+    const [row] = await this.db.select({ value: count() }).from(polls);
+    return Number(row?.value ?? 0);
   }
 }

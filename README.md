@@ -35,173 +35,169 @@ From the repository root:
 bun install
 ```
 
-This installs all workspace dependencies and configures the Husky Git hooks.
-
 ### 2. Configure the environment
-
-Create the Docker environment file:
 
 ```bash
 cp .env.example .env
-```
-
-Create the backend environment file:
-
-```bash
 cp apps/backend/.env.example apps/backend/.env
 ```
 
-Fill both files with local values. JWT access and refresh secrets must each
-contain at least 32 characters and should be different.
+Fill both files with local values. JWT secrets must each be at least 32
+characters and different. Set `SMTP_USER` / `SMTP_PASS` for email delivery.
 
-### 3. Start PostgreSQL and Redis
+### 3. Start with Docker Compose (full stack)
 
-```bash
-docker compose up -d
-```
-
-### 4. Apply database migrations
+Root `.env` only needs Postgres/Redis (you may already have this).  
+Backend still uses `apps/backend/.env`; frontend Vite defaults match `apps/frontend/.env.example`.
 
 ```bash
-cd apps/backend
-bun run db:migrate
+# Root: POSTGRES_* + REDIS_PORT (see .env.example)
+# Apps:
+cp apps/backend/.env.example apps/backend/.env   # if missing
+cp apps/frontend/.env.example apps/frontend/.env # if missing
+
+docker compose up --build -d
 ```
 
-### 5. Start the applications
+Compose overrides `DATABASE_URL` / `REDIS_URL` for the backend container so it talks to the `postgres` and `redis` services (your backend `.env` can keep `localhost` for `bun run dev`).
 
-Backend:
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API + Socket.IO | http://localhost:3000 |
+| Postgres | localhost:5432 |
+| Redis | localhost:6379 |
+
+The backend container runs migrations on startup. App images are built from
+`apps/backend/Dockerfile` and `apps/frontend/Dockerfile`.
+
+### 4. Local development (apps outside Docker)
+
+Keep only infra in Docker if you prefer hot reload:
 
 ```bash
-cd apps/backend
-bun run dev
+docker compose up -d postgres redis
 ```
 
-Frontend, in another terminal:
+Then:
 
 ```bash
-cd apps/frontend
-bun run dev
+cd apps/backend && bun run db:migrate && bun run dev
 ```
 
-The backend uses port `4000` by default, and Vite uses port `5173` by default.
+```bash
+cd apps/frontend && bun run dev
+```
+
+Point `apps/backend/.env` `DATABASE_URL` / `REDIS_URL` at `localhost`.
 
 ## Authentication API
 
-The authentication API is mounted at `/api/v1/auth`.
+Mounted at `/api/v1/auth`.
 
-| Method | Endpoint    | Purpose                                         |
-| ------ | ----------- | ----------------------------------------------- |
-| `POST` | `/register` | Register a user                                 |
-| `POST` | `/login`    | Return an access token and set a refresh cookie |
-| `POST` | `/refresh`  | Rotate the refresh session and access token     |
-| `POST` | `/logout`   | Revoke the refresh session and clear its cookie |
-| `GET`  | `/me`       | Return the authenticated user                   |
+| Method | Endpoint | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/register` | Public | Register; sends verification email |
+| `POST` | `/login` | Public | Access token + refresh cookie (email must be verified) |
+| `POST` | `/verify-email` | Public | Verify email with token |
+| `POST` | `/resend-verification` | Public | Resend verification email |
+| `POST` | `/forgot-password` | Public | Send password-reset email |
+| `POST` | `/reset-password` | Public | Reset password with token |
+| `POST` | `/change-password` | Bearer | Change password while logged in |
+| `POST` | `/refresh` | Refresh cookie | Rotate refresh session |
+| `POST` | `/logout` | Refresh cookie | Revoke refresh session |
+| `GET` | `/me` | Bearer | Current user |
 
-Access tokens are sent as `Authorization: Bearer <token>`. Refresh tokens are
-stored in secure `httpOnly` cookies and rotated through one-time Redis sessions.
+Login failures are counted in Redis. After `LOGIN_MAX_ATTEMPTS`, the identifier
+is locked for `LOGIN_LOCKOUT_DURATION`.
 
 ## Polls API
 
-The polls API is mounted at `/api/v1/polls`.
+Mounted at `/api/v1/polls`. Any authenticated user can create a poll; ownership
+is `creatorId` on that poll.
 
-| Method   | Endpoint          | Auth | Purpose                                       |
-| -------- | ----------------- | ---- | --------------------------------------------- |
-| `POST`   | `/`               | Yes  | Create a poll (metadata only)                 |
-| `GET`    | `/`               | Yes  | List polls owned by the authenticated user    |
-| `GET`    | `/share/:shareId` | No   | Fetch a poll by share ID                      |
-| `GET`    | `/:id`            | No   | Fetch a poll by ID                            |
-| `PATCH`  | `/:id`            | Yes  | Update a poll owned by the authenticated user |
-| `DELETE` | `/:id`            | Yes  | Delete a poll owned by the authenticated user |
+| Method | Endpoint | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/` | Yes | Create poll |
+| `GET` | `/` | Yes | List own polls (`limit`, `offset`) |
+| `GET` | `/share/:shareId/form` | Optional | Poll + questions + options (take-poll form) |
+| `GET` | `/share/:shareId` | Optional | Poll by share ID |
+| `GET` | `/:id` | Optional | Poll by ID |
+| `PATCH` | `/:id` | Yes (owner) | Update poll |
+| `DELETE` | `/:id` | Yes (owner) | Delete poll |
 
-Poll records currently store metadata (title, description, status, expiration,
-share ID, and visibility flags). Options, voting, and live result updates are
-not implemented yet.
+Public reads enforce: open status, not expired, and
+`requireAuthentication` when set. Owners bypass those checks.
 
-## Questions API
+## Questions / Options / Responses / Results
 
-The questions API is nested under polls at `/api/v1/polls/:pollId/questions`.
+- Questions: `/api/v1/polls/:pollId/questions`
+- Reorder: `PUT /api/v1/polls/:pollId/questions/reorder` `{ orderedIds: string[] }`
+- Options: `/api/v1/polls/:pollId/questions/:questionId/options`
+- Responses: `/api/v1/polls/:pollId/responses` (guest cookie or auth)
+- Results: `/api/v1/polls/:pollId/results` (owner/admin always; others if published)
+- Analytics: `GET /api/v1/polls/:pollId/results/analytics` (owner or admin)
 
-| Method   | Endpoint | Auth | Purpose                                                          |
-| -------- | -------- | ---- | ---------------------------------------------------------------- |
-| `POST`   | `/`      | Yes  | Create a question on a poll owned by the authenticated user      |
-| `GET`    | `/`      | No   | List questions for a poll, ordered by `displayOrder`             |
-| `GET`    | `/:id`   | No   | Fetch a question by ID within a poll                             |
-| `PATCH`  | `/:id`   | Yes  | Update a question on a poll owned by the authenticated user      |
-| `DELETE` | `/:id`   | Yes  | Delete a question on a poll owned by the authenticated user      |
+## Admin API
 
-Create/update body fields:
+Mounted at `/api/v1/admin` (role `admin` required).
 
-- `title` (required on create): 3–500 characters
-- `isMandatory` (optional): boolean, defaults to `true` on create
-- `displayOrder` (required on create): non-negative integer unique per poll
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/polls` | List all polls (`limit`, `offset`) |
+| `GET` | `/users?q=` | Search users by email or username |
+| `PATCH` | `/users/:id/role` | Set user role (`user` \| `creator` \| `admin`) |
+| `PATCH` | `/users/:id/plan` | Set user plan (`free` \| `pro`) |
 
-Mutations require authentication and poll ownership. Path params (`pollId`,
-`id`) must be UUIDs. Duplicate `displayOrder` values for the same poll return
-`409 Conflict`.
+Admins can also update/delete any poll and view unpublished results/analytics.
+
+## Real-time (Socket.IO)
+
+Clients connect to the same HTTP origin. Optional:
+`handshake.auth.token` = access token.
+
+| Client → server | Server → client |
+| --- | --- |
+| `joinPoll` `{ pollId }` | `joinedPoll`, `error` |
+| `leavePoll` `{ pollId }` | `leftPoll` |
+| | `responseSubmitted`, `resultsUpdated`, `pollUpdated`, `pollDeleted` |
+
+`joinPoll` uses the same readability rules as public poll GETs.
 
 ## Backend Commands
 
-Run these commands from `apps/backend`:
+From `apps/backend`:
 
 ```bash
-bun run dev          # Start with hot reload
-bun run start        # Start without hot reload
-bun test             # Run tests (none currently)
-bun run typecheck    # Check TypeScript
-bun run lint         # Run ESLint
-bun run lint:fix     # Fix supported lint issues
-bun run format       # Format files
-bun run format:check # Check formatting
-bun run db:generate  # Generate a migration
-bun run db:migrate   # Apply migrations
-bun run db:push      # Push schema changes directly
-bun run db:studio    # Open Drizzle Studio
-bun run db:check     # Validate migration metadata
+bun run dev
+bun run typecheck
+bun run lint
+bun run db:migrate
+bun run db:generate
 ```
-
-The database scripts automatically remove macOS AppleDouble (`._*`) metadata
-that can otherwise break Drizzle migration parsing on external drives.
-
-## Git Hooks
-
-The pre-commit hook runs lint-staged:
-
-- Backend TypeScript/JavaScript: ESLint fixes and Prettier
-- Backend JSON/Markdown/YAML: Prettier
-- Frontend TypeScript/JavaScript: ESLint fixes
 
 ## Current Status
 
-### Completed
+### Completed (backend)
 
-- Bun workspace monorepo with Docker Compose (PostgreSQL + Redis)
-- Backend bootstrap, CORS, cookies, and graceful shutdown
-- PostgreSQL and Redis integration with Drizzle migrations
-- Auth API: register, login, refresh, logout, and `/me`
-- JWT access tokens and Redis-backed one-time refresh-token rotation
-- Central validation, error classes, and API response helpers
-- Poll metadata CRUD: create, list own, get by ID, get by share ID, update, delete
-- Question CRUD nested under polls, with ownership checks and UUID param validation
-- Questions schema and migration (unique `displayOrder` per poll, cascade on poll delete)
-- Code-quality tooling (ESLint, Prettier, Husky)
+- Auth: register/login/refresh/logout/me, email verify, forgot/reset/change password
+- SMTP mailer, Redis verify/reset tokens, login lockout
+- Polls, questions, options, responses (guest cookie), results + creator analytics
+- Public poll form endpoint
+- Public-read rules, list pagination, question reorder
+- Admin role: list/search users, list polls, set roles, manage any poll
+- Results/form option loading without N+1 queries
+- Socket.IO + Redis adapter with live poll events and join ACL
+- Creator-only unpublished `resultsUpdated` via `poll:{id}:creators` room
 
-### In progress / known gaps
+### Completed (frontend)
 
-- Polls and questions store structure only — no options/choices or create payload yet
-- Public poll/question reads do not enforce expiration, status, `resultPublished`, or
-  `requireAuthentication`
-- Creator role is not enforced; any authenticated user can create polls
-- List-own polls endpoint has no query pagination
-- Question reordering across unique `displayOrder` values has no dedicated transaction/API
-- No automated tests currently in the repo
+- Auth, dashboard, create/manage polls, take-poll + live results
+- Creator insights, pricing page, settings profile, admin UI
+- Share QR, pagination, empty states / 404, theme polish
 
 ### Remaining
 
-- Poll options, voting, vote persistence, and result aggregation
-- Duplicate-vote protection and voter authentication rules
-- Real-time Socket.IO updates (dependency present, not wired)
-- Email verification and password reset
-- Authentication rate limiting and account lockout
-- Frontend auth flows and polling UI (still the Vite starter)
-- Broader test coverage (routes, Redis/cookie flows, polls, questions, e2e)
-- CI, health checks, and production deployment config
+- Automated tests, CI, production deployment config
+- Optional: switch SMTP to Resend when a domain is available
+- Optional: Pro billing when ready

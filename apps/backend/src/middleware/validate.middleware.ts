@@ -65,3 +65,10 @@ export const validateParams = createValidator(
     Object.assign(req.params, data);
   },
 );
+
+export const validateQuery = createValidator(
+  (req) => req.query,
+  (req, data) => {
+    Object.assign(req.query, data as Record<string, unknown>);
+  },
+);
